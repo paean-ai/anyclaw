@@ -1,4 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
-  <text x="16" y="23" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="18" fill="#06b6d4">&gt;_</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- AnyClaw Favicon — Claw + Paean Arch DNA -->
+
+  <!-- Paean arch (doorway shape, connecting to Paean family identity) -->
+  <path 
+    d="M 18 88 L 18 48 A 32 32 0 0 1 82 48 L 82 88" 
+    stroke="#06b6d4" 
+    stroke-width="4" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    fill="none"
+  />
+
+  <!-- Three claw marks — the "Claw" identity (inside the arch) -->
+  <!-- Left talon -->
+  <path 
+    d="M 34 38 Q 30 55 38 72" 
+    stroke="#06b6d4" 
+    stroke-width="4.5" 
+    stroke-linecap="round" 
+    fill="none"
+  />
+  <!-- Center talon -->
+  <path 
+    d="M 50 32 L 50 72" 
+    stroke="#06b6d4" 
+    stroke-width="4.5" 
+    stroke-linecap="round" 
+    fill="none"
+  />
+  <!-- Right talon -->
+  <path 
+    d="M 66 38 Q 70 55 62 72" 
+    stroke="#06b6d4" 
+    stroke-width="4.5" 
+    stroke-linecap="round" 
+    fill="none"
+  />
 </svg>

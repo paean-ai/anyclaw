@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <!-- AnyClaw Logo — Icon + Wordmark -->
+  
+  <!-- === Icon (claw inside arch) === -->
+  <g transform="translate(10, 2) scale(0.56)">
+    <!-- Paean arch (doorway shape) -->
+    <path 
+      d="M 18 88 L 18 48 A 32 32 0 0 1 82 48 L 82 88" 
+      stroke="#06b6d4" 
+      stroke-width="5" 
+      stroke-linecap="round" 
+      stroke-linejoin="round" 
+      fill="none"
+    />
+    <!-- Left talon -->
+    <path 
+      d="M 34 38 Q 30 55 38 72" 
+      stroke="#06b6d4" 
+      stroke-width="5.5" 
+      stroke-linecap="round" 
+      fill="none"
+    />
+    <!-- Center talon -->
+    <path 
+      d="M 50 32 L 50 72" 
+      stroke="#06b6d4" 
+      stroke-width="5.5" 
+      stroke-linecap="round" 
+      fill="none"
+    />
+    <!-- Right talon -->
+    <path 
+      d="M 66 38 Q 70 55 62 72" 
+      stroke="#06b6d4" 
+      stroke-width="5.5" 
+      stroke-linecap="round" 
+      fill="none"
+    />
+  </g>
+  
+  <!-- === Wordmark === -->
+  <text 
+    x="72" 
+    y="40" 
+    font-family="'Inter', -apple-system, sans-serif" 
+    font-weight="700" 
+    font-size="30" 
+    fill="#e5e5e5"
+    letter-spacing="-0.5"
+  >AnyClaw</text>
+</svg>

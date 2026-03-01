@@ -1,6 +1,18 @@
-# AnyClaw
+<p align="center">
+  <img src="public/favicon.svg" width="80" height="80" alt="AnyClaw Logo" />
+</p>
 
-> Access your local AI agent from anywhere.
+<h1 align="center">AnyClaw</h1>
+
+<p align="center">
+  <em>Access your local AI agent from anywhere.</em>
+</p>
+
+<p align="center">
+  <a href="https://anyclaw.sh">anyclaw.sh</a> · <a href="https://anyclaw.dev">anyclaw.dev</a> · <a href="LICENSE">MIT License</a>
+</p>
+
+---
 
 AnyClaw is a lightweight web frontend that connects to your local AI agent through a secure cloud relay. No port forwarding, no VPN, no complex setup — just a key.
 
