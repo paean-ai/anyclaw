@@ -312,8 +312,8 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
           onClick={generateGuest}
           disabled={loading}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2",
-            "px-3 py-2.5 rounded-lg text-sm font-medium",
+            "flex-1 flex items-center justify-center gap-1.5",
+            "px-2 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap",
             "bg-neutral-800 border border-neutral-700",
             "text-neutral-300 hover:text-neutral-100 hover:border-neutral-600",
             "light:bg-neutral-100 light:border-neutral-300",
@@ -324,23 +324,23 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
           {loading ? (
             <Loader2 size={14} className="animate-spin" />
           ) : (
-            <Key size={14} />
+            <Key size={14} className="shrink-0" />
           )}
-          Guest Key
+          Guest
         </button>
 
         {onLogin && (
           <button
             onClick={onLogin}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2",
-              "px-3 py-2.5 rounded-lg text-sm font-medium",
+              "flex-1 flex items-center justify-center gap-1.5",
+              "px-2 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap",
               "bg-claw-500/10 border border-claw-500/20",
               "text-claw-400 hover:bg-claw-500/20",
               "transition-fast"
             )}
           >
-            <LogIn size={14} />
+            <LogIn size={14} className="shrink-0" />
             Sign In
           </button>
         )}
