@@ -179,7 +179,10 @@ export async function loginWithGoogle(
 ): Promise<{ token: string; user: { id: number; email: string; name: string } }> {
   return request("/auth/google", {
     method: "POST",
-    body: JSON.stringify({ credential }),
+    body: JSON.stringify({
+      idToken: credential,
+      domain: window.location.hostname,
+    }),
   });
 }
 

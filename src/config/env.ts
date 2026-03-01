@@ -3,6 +3,9 @@ import type { AppMode } from "@/types";
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:4777";
 
+export const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
 export function detectMode(): AppMode {
   const params = new URLSearchParams(window.location.search);
   const override = params.get("mode");
