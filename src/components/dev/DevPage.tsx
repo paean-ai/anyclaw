@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { useChannel } from "@/hooks/useChannel";
@@ -10,11 +10,28 @@ import { ConnectionStatus } from "@/components/shared/ConnectionStatus";
 import { Logo } from "@/components/shared/Logo";
 import { APP_VERSION } from "@/config/env";
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
+
 export function DevPage() {
   const { connectionState, messages } = useApp();
   useConnection();
   const { send, cancel } = useChannel();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
+
+  // Auto-collapse sidebar on resize to mobile
+  useEffect(() => {
+    if (isMobile) setSidebarCollapsed(true);
+  }, [isMobile]);
 
   const isStreaming = useMemo(
     () => messages.some((m) => m.isStreaming),
@@ -30,11 +47,26 @@ export function DevPage() {
         "text-neutral-100 dark:text-neutral-100 light:text-neutral-900"
       )}
     >
+      {/* Mobile overlay sidebar */}
+      {isMobile && !sidebarCollapsed && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
       {/* Sidebar */}
-      <DevSidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
+      <div
+        className={cn(
+          isMobile && !sidebarCollapsed &&
+          "fixed inset-y-0 left-0 z-50 shadow-2xl"
+        )}
+      >
+        <DevSidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      </div>
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">

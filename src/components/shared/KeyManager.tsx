@@ -15,6 +15,8 @@ import {
   Share2,
   QrCode,
   X,
+  Shield,
+  Clock,
 } from "lucide-react";
 
 interface KeyManagerProps {
@@ -42,12 +44,19 @@ function QrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
       <div
-        className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 space-y-3 max-w-xs"
+        className={cn(
+          "border rounded-xl p-6 space-y-3 max-w-xs",
+          "bg-neutral-900 border-neutral-700",
+          "light:bg-white light:border-neutral-200"
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-neutral-200">Scan to connect</span>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-300">
+          <span className="text-sm font-medium text-neutral-200 light:text-neutral-800">Scan to connect</span>
+          <button
+            onClick={onClose}
+            className="text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700"
+          >
             <X size={16} />
           </button>
         </div>
@@ -129,31 +138,60 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
       <>
         <div
           className={cn(
-            "flex flex-col gap-2",
+            "flex flex-col gap-2.5",
             variant === "modal" && "w-full"
           )}
         >
+          {/* Key type badge */}
+          <div className="flex items-center gap-1.5">
+            {keyInfo?.type === "persistent" ? (
+              <span className="flex items-center gap-1 text-[10px] font-medium text-claw-400 bg-claw-500/10 px-1.5 py-0.5 rounded-full">
+                <Shield size={10} />
+                Persistent
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] font-medium text-warn-400 bg-warn-400/10 px-1.5 py-0.5 rounded-full">
+                <Clock size={10} />
+                Guest · 24h
+              </span>
+            )}
+          </div>
+
           {/* Key display row */}
           <div
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg",
-              "bg-neutral-800/50 border border-neutral-700/50"
+              "bg-neutral-800/50 border border-neutral-700/50",
+              "light:bg-neutral-100 light:border-neutral-200"
             )}
           >
             <Key size={14} className="text-claw-400 shrink-0" />
-            <code className="text-xs text-neutral-400 font-mono truncate flex-1 select-all">
+            <code
+              className={cn(
+                "text-xs font-mono truncate flex-1 select-all",
+                "text-neutral-400 light:text-neutral-600"
+              )}
+            >
               {revealed ? clawKey : `${clawKey.slice(0, 8)}...${clawKey.slice(-6)}`}
             </code>
             <button
               onClick={() => setRevealed(!revealed)}
-              className="text-neutral-500 hover:text-neutral-300 transition-fast"
+              className={cn(
+                "transition-fast",
+                "text-neutral-500 hover:text-neutral-300",
+                "light:hover:text-neutral-700"
+              )}
               title={revealed ? "Hide key" : "Reveal key"}
             >
               {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
             <button
               onClick={copyKey}
-              className="text-neutral-500 hover:text-neutral-300 transition-fast"
+              className={cn(
+                "transition-fast",
+                "text-neutral-500 hover:text-neutral-300",
+                "light:hover:text-neutral-700"
+              )}
               title="Copy key"
             >
               {copied === "key" ? <Check size={14} className="text-term-400" /> : <Copy size={14} />}
@@ -161,13 +199,15 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
               onClick={copyShareUrl}
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs",
                 "bg-neutral-800/50 border border-neutral-700/40",
                 "text-neutral-400 hover:text-neutral-200 hover:border-neutral-600",
+                "light:bg-neutral-100 light:border-neutral-200",
+                "light:text-neutral-600 light:hover:text-neutral-800 light:hover:border-neutral-300",
                 "transition-fast"
               )}
               title="Copy share URL"
@@ -181,6 +221,8 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs",
                 "bg-neutral-800/50 border border-neutral-700/40",
                 "text-neutral-400 hover:text-neutral-200 hover:border-neutral-600",
+                "light:bg-neutral-100 light:border-neutral-200",
+                "light:text-neutral-600 light:hover:text-neutral-800 light:hover:border-neutral-300",
                 "transition-fast"
               )}
               title="Show QR code"
@@ -196,6 +238,8 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs",
                   "bg-neutral-800/50 border border-neutral-700/40",
                   "text-neutral-400 hover:text-neutral-200 hover:border-neutral-600",
+                  "light:bg-neutral-100 light:border-neutral-200",
+                  "light:text-neutral-600 light:hover:text-neutral-800 light:hover:border-neutral-300",
                   "disabled:opacity-40 transition-fast"
                 )}
                 title="Regenerate key"
@@ -233,9 +277,11 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
           placeholder="Paste your ClawKey (ck_...)"
           onKeyDown={(e) => e.key === "Enter" && connectWithKey()}
           className={cn(
-            "flex-1 px-3 py-2 rounded-lg text-sm font-mono",
+            "flex-1 min-w-0 px-3 py-2 rounded-lg text-sm font-mono",
             "bg-neutral-800 border border-neutral-700",
             "text-neutral-100 placeholder:text-neutral-600",
+            "light:bg-white light:border-neutral-300",
+            "light:text-neutral-900 light:placeholder:text-neutral-400",
             "focus:outline-none focus:border-claw-500/50",
             "transition-fast"
           )}
@@ -244,9 +290,10 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
           onClick={connectWithKey}
           disabled={!inputKey.trim()}
           className={cn(
-            "px-3 py-2 rounded-lg text-sm font-medium",
+            "px-3 py-2 rounded-lg text-sm font-medium shrink-0",
             "bg-claw-500/20 text-claw-400 border border-claw-500/30",
             "hover:bg-claw-500/30 disabled:opacity-40",
+            "light:bg-claw-500/10 light:border-claw-500/20",
             "transition-fast"
           )}
         >
@@ -255,9 +302,9 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-neutral-800" />
-        <span className="text-xs text-neutral-600">or</span>
-        <div className="h-px flex-1 bg-neutral-800" />
+        <div className="h-px flex-1 bg-neutral-800 light:bg-neutral-200" />
+        <span className="text-xs text-neutral-600 light:text-neutral-400">or</span>
+        <div className="h-px flex-1 bg-neutral-800 light:bg-neutral-200" />
       </div>
 
       <div className="flex gap-2">
@@ -269,6 +316,8 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
             "px-3 py-2.5 rounded-lg text-sm font-medium",
             "bg-neutral-800 border border-neutral-700",
             "text-neutral-300 hover:text-neutral-100 hover:border-neutral-600",
+            "light:bg-neutral-100 light:border-neutral-300",
+            "light:text-neutral-600 light:hover:text-neutral-900 light:hover:border-neutral-400",
             "disabled:opacity-50 transition-fast"
           )}
         >

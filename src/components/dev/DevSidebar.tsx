@@ -26,10 +26,19 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
   if (collapsed) {
     return (
       <>
-        <div className="flex flex-col items-center py-3 px-2 gap-3 border-r border-neutral-800 dark:border-neutral-800 light:border-neutral-200">
+        <div
+          className={cn(
+            "flex flex-col items-center py-3 px-2 gap-3",
+            "border-r border-neutral-800 dark:border-neutral-800 light:border-neutral-200"
+          )}
+        >
           <button
             onClick={onToggle}
-            className="p-2 rounded-lg text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition-fast"
+            className={cn(
+              "p-2 rounded-lg transition-fast",
+              "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800",
+              "light:hover:text-neutral-700 light:hover:bg-neutral-100"
+            )}
           >
             <PanelLeft size={18} />
           </button>
@@ -46,22 +55,36 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
         className={cn(
           "w-64 shrink-0 flex flex-col",
           "border-r border-neutral-800 dark:border-neutral-800 light:border-neutral-200",
-          "bg-neutral-900/50 dark:bg-neutral-900/50 light:bg-neutral-50"
+          "bg-neutral-900/50 dark:bg-neutral-900/50 light:bg-neutral-50/80"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 dark:border-neutral-800 light:border-neutral-200">
+        <div
+          className={cn(
+            "flex items-center justify-between px-4 py-3",
+            "border-b border-neutral-800 dark:border-neutral-800 light:border-neutral-200"
+          )}
+        >
           <Logo size="sm" />
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition-fast"
+            className={cn(
+              "p-1.5 rounded-lg transition-fast",
+              "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800",
+              "light:hover:text-neutral-700 light:hover:bg-neutral-100"
+            )}
           >
             <PanelLeftClose size={16} />
           </button>
         </div>
 
         {/* Connection */}
-        <div className="px-4 py-3 border-b border-neutral-800/50 dark:border-neutral-800/50 light:border-neutral-200/50">
+        <div
+          className={cn(
+            "px-4 py-3",
+            "border-b border-neutral-800/50 dark:border-neutral-800/50 light:border-neutral-200/50"
+          )}
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Connection
@@ -75,12 +98,18 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
         <div className="flex-1" />
 
         {/* Footer controls */}
-        <div className="px-4 py-3 border-t border-neutral-800/50 dark:border-neutral-800/50 light:border-neutral-200/50 space-y-1">
+        <div
+          className={cn(
+            "px-4 py-3 space-y-1",
+            "border-t border-neutral-800/50 dark:border-neutral-800/50 light:border-neutral-200/50"
+          )}
+        >
           <button
             onClick={clearMessages}
             className={cn(
               "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm",
               "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/50",
+              "light:hover:text-neutral-700 light:hover:bg-neutral-100",
               "transition-fast"
             )}
           >
@@ -94,6 +123,7 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
             className={cn(
               "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm",
               "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/50",
+              "light:hover:text-neutral-700 light:hover:bg-neutral-100",
               "transition-fast"
             )}
           >

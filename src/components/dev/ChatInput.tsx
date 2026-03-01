@@ -49,7 +49,9 @@ export function ChatInput({
         "flex items-end gap-2 p-3",
         "bg-neutral-900/80 dark:bg-neutral-900/80 light:bg-white/80",
         "border-t border-neutral-800 dark:border-neutral-800 light:border-neutral-200",
-        "glass"
+        "glass",
+        /* safe area for notched devices */
+        "pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       )}
     >
       <textarea
@@ -65,7 +67,7 @@ export function ChatInput({
           "bg-neutral-800 dark:bg-neutral-800 light:bg-neutral-100",
           "border border-neutral-700 dark:border-neutral-700 light:border-neutral-300",
           "text-neutral-100 dark:text-neutral-100 light:text-neutral-900",
-          "placeholder:text-neutral-500",
+          "placeholder:text-neutral-500 light:placeholder:text-neutral-400",
           "focus:outline-none focus:border-claw-500/50",
           "transition-fast",
           "min-h-[44px] max-h-[160px]"
@@ -76,7 +78,7 @@ export function ChatInput({
         <button
           onClick={onCancel}
           className={cn(
-            "shrink-0 p-2.5 rounded-xl",
+            "shrink-0 p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center",
             "bg-error-400/20 text-error-400 border border-error-400/30",
             "hover:bg-error-400/30 transition-fast"
           )}
@@ -88,7 +90,7 @@ export function ChatInput({
           onClick={handleSubmit}
           disabled={!value.trim() || disabled}
           className={cn(
-            "shrink-0 p-2.5 rounded-xl",
+            "shrink-0 p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center",
             "bg-claw-500 text-white",
             "hover:bg-claw-600 disabled:opacity-30 disabled:cursor-not-allowed",
             "transition-fast"

@@ -11,6 +11,7 @@ import { nanoid } from "nanoid";
 import { APP_VERSION } from "@/config/env";
 
 const HELP_TEXT = `Available commands:
+
   connect [key]   Connect using a ClawKey (or paste one directly)
   disconnect      Disconnect from local agent
   guest           Generate a temporary guest key
@@ -31,6 +32,15 @@ Setup (non-invasive — no changes to your agent):
 
 The bridge connects your local agent to this terminal. Zero source changes.`;
 
+const WELCOME_TEXT = `Welcome to AnyClaw — access your local agent from anywhere.
+
+To get started:
+  • Type "guest" to generate a temporary ClawKey
+  • Type "help" to see all available commands
+  • Or paste a ClawKey (ck_...) directly
+
+Quick setup:  curl -sL anyclaw.sh | bash`;
+
 export function ShellPage() {
   const {
     clawKey,
@@ -48,6 +58,7 @@ export function ShellPage() {
   const [booted, setBooted] = useState(false);
   const [processing, setProcessing] = useState(false);
   const processingRef = useRef(false);
+  const welcomeSentRef = useRef(false);
 
   const prompt = connectionState === "connected"
     ? "anyclaw@local:~$ "
@@ -65,6 +76,18 @@ export function ShellPage() {
     [addMessage]
   );
 
+  const handleBootComplete = useCallback(() => {
+    setBooted(true);
+    // Emit welcome message into the terminal after boot
+    if (!welcomeSentRef.current) {
+      welcomeSentRef.current = true;
+      // Slight delay so terminal mounts first
+      setTimeout(() => {
+        systemMsg(WELCOME_TEXT);
+      }, 100);
+    }
+  }, [systemMsg]);
+
   const handleCommand = useCallback(
     async (input: string) => {
       if (processingRef.current) return;
@@ -79,12 +102,12 @@ export function ShellPage() {
           setConnectionState(online ? "connected" : "disconnected");
           systemMsg(
             online
-              ? "Connected to local agent."
+              ? "✓ Connected to local agent."
               : "Key accepted. Local agent is offline — start openclaw or paeanclaw to connect."
           );
         } catch {
           setConnectionState("error");
-          systemMsg("Failed to verify key.");
+          systemMsg("✗ Failed to verify key.");
         }
         return;
       }
@@ -110,18 +133,20 @@ export function ShellPage() {
             const info = await createGuestKey();
             setClawKey(info.key);
             setKeyInfo(info);
-            systemMsg(`Guest key created: ${info.key}`);
+            systemMsg(`✓ Guest key created: ${info.key}`);
             systemMsg("This key expires in 24 hours. Use 'connect' to link.");
             const online = await channelOnline(info.key);
             setConnectionState(online ? "connected" : "disconnected");
             if (!online) {
               systemMsg(
-                "Local agent is offline. Configure this key in your openclaw/paeanclaw."
+                "Local agent is offline. Run your agent and bridge to connect."
               );
+            } else {
+              systemMsg("✓ Connected to local agent. You can now chat.");
             }
           } catch (err) {
             systemMsg(
-              `Error: ${err instanceof Error ? err.message : "Failed"}`
+              `✗ Error: ${err instanceof Error ? err.message : "Failed"}`
             );
           }
           break;
@@ -147,12 +172,12 @@ export function ShellPage() {
             setConnectionState(online ? "connected" : "disconnected");
             systemMsg(
               online
-                ? "Connected to local agent."
+                ? "✓ Connected to local agent."
                 : "Key accepted. Agent is offline."
             );
           } catch {
             setConnectionState("error");
-            systemMsg("Connection error.");
+            systemMsg("✗ Connection error.");
           }
           break;
         }
@@ -165,12 +190,20 @@ export function ShellPage() {
 
         case "status":
           systemMsg(`Connection: ${connectionState}`);
-          systemMsg(`Key: ${clawKey ? `${clawKey.slice(0, 8)}...` : "none"}`);
+          systemMsg(`Key: ${clawKey ? `${clawKey.slice(0, 8)}...${clawKey.slice(-6)}` : "none"}`);
+          if (clawKey) {
+            systemMsg(`Key type: ${keyInfo?.type || "unknown"}`);
+          }
           await checkOnline();
           break;
 
         case "key":
-          systemMsg(clawKey || "No key set. Use 'guest' or 'connect <key>'.");
+          if (clawKey) {
+            systemMsg(clawKey);
+            systemMsg(`Type: ${keyInfo?.type || "unknown"}`);
+          } else {
+            systemMsg("No key set. Use 'guest' or 'connect <key>'.");
+          }
           break;
 
         case "refresh":
@@ -184,9 +217,9 @@ export function ShellPage() {
             const updated = await regenerateKey(authToken, keyInfo.id);
             setClawKey(updated.key);
             setKeyInfo(updated);
-            systemMsg(`New key: ${updated.key}`);
+            systemMsg(`✓ New key: ${updated.key}`);
           } catch (err) {
-            systemMsg(`Error: ${err instanceof Error ? err.message : "Failed"}`);
+            systemMsg(`✗ Error: ${err instanceof Error ? err.message : "Failed"}`);
           }
           break;
         }
@@ -208,7 +241,11 @@ export function ShellPage() {
         }
 
         case "install":
-          systemMsg("One-line install:\n\n  curl -sL anyclaw.sh | bash\n\nThis installs the bridge, generates a key, and connects automatically.");
+          systemMsg(`One-line install:
+
+  curl -sL anyclaw.sh | bash
+
+This installs the bridge, generates a key, and connects automatically.`);
           break;
 
         default:
@@ -278,7 +315,7 @@ export function ShellPage() {
       <div className="flex-1 overflow-hidden flex flex-col">
         {!booted ? (
           <div className="px-4 sm:px-6 py-6">
-            <TerminalBoot onComplete={() => setBooted(true)} />
+            <TerminalBoot onComplete={handleBootComplete} />
           </div>
         ) : (
           <Terminal
