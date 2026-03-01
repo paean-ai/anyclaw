@@ -21,6 +21,7 @@ const HELP_TEXT = `Available commands:
   status          Show connection status
   key             Show current ClawKey
   clear           Clear terminal
+  gui             Switch to graphical UI mode
   help            Show this help
   version         Show version
 
@@ -52,6 +53,7 @@ export function ShellPage() {
     setConnectionState,
     addMessage,
     clearMessages,
+    setMode,
   } = useApp();
   const { send } = useChannel();
   const { checkOnline } = useConnection();
@@ -246,6 +248,13 @@ export function ShellPage() {
   curl -sL anyclaw.sh | bash
 
 This installs the bridge, generates a key, and connects automatically.`);
+          break;
+
+        case "gui":
+        case "dev":
+        case "ui":
+          systemMsg("Switching to graphical UI...");
+          setTimeout(() => setMode("dev"), 300);
           break;
 
         default:

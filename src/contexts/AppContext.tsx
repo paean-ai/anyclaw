@@ -32,6 +32,7 @@ function getUrlClawKey(): string | null {
 
 interface AppState {
   mode: AppMode;
+  setMode: (m: AppMode) => void;
   theme: "dark" | "light";
   setThemeMode: (t: "dark" | "light") => void;
   clawKey: string | null;
@@ -53,7 +54,7 @@ interface AppState {
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [mode] = useState<AppMode>(detectMode);
+  const [mode, setMode] = useState<AppMode>(detectMode);
   const [theme, setThemeState] = useState<"dark" | "light">(getTheme);
   const [clawKey, setClawKeyState] = useState<string | null>(getStoredKey);
   const [authToken, setAuthTokenState] = useState<string | null>(getStoredToken);
@@ -124,6 +125,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         mode,
+        setMode,
         theme,
         setThemeMode,
         clawKey,

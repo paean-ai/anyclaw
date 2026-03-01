@@ -28,7 +28,6 @@ export function DevPage() {
   const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
 
-  // Auto-collapse sidebar on resize to mobile
   useEffect(() => {
     if (isMobile) setSidebarCollapsed(true);
   }, [isMobile]);
@@ -42,12 +41,12 @@ export function DevPage() {
   return (
     <div
       className={cn(
-        "h-screen w-screen flex",
+        "fixed inset-0 flex overflow-hidden",
         "bg-neutral-950 dark:bg-neutral-950 light:bg-white",
         "text-neutral-100 dark:text-neutral-100 light:text-neutral-900"
       )}
     >
-      {/* Mobile overlay sidebar */}
+      {/* Mobile overlay backdrop */}
       {isMobile && !sidebarCollapsed && (
         <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
@@ -58,6 +57,7 @@ export function DevPage() {
       {/* Sidebar */}
       <div
         className={cn(
+          "shrink-0 h-full",
           isMobile && !sidebarCollapsed &&
           "fixed inset-y-0 left-0 z-50 shadow-2xl"
         )}
@@ -69,12 +69,13 @@ export function DevPage() {
       </div>
 
       {/* Main area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* Top bar */}
         <div
           className={cn(
-            "flex items-center justify-between px-4 sm:px-6 py-2.5",
-            "border-b border-neutral-800 dark:border-neutral-800 light:border-neutral-200"
+            "flex items-center justify-between px-4 sm:px-6 h-12 shrink-0",
+            "border-b",
+            "border-neutral-800 dark:border-neutral-800 light:border-neutral-200"
           )}
         >
           <div className="flex items-center gap-3">
@@ -90,17 +91,19 @@ export function DevPage() {
         <ChatView />
 
         {/* Input */}
-        <ChatInput
-          onSubmit={send}
-          onCancel={cancel}
-          isStreaming={isStreaming}
-          disabled={!isConnected}
-          placeholder={
-            isConnected
-              ? "Message your agent..."
-              : "Connect a ClawKey to start chatting"
-          }
-        />
+        <div className="shrink-0">
+          <ChatInput
+            onSubmit={send}
+            onCancel={cancel}
+            isStreaming={isStreaming}
+            disabled={!isConnected}
+            placeholder={
+              isConnected
+                ? "Message your agent..."
+                : "Connect a ClawKey to start chatting"
+            }
+          />
+        </div>
       </div>
     </div>
   );
