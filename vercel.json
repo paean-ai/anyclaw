@@ -4,7 +4,7 @@
     "outputDirectory": "dist",
     "rewrites": [
         {
-            "source": "/()",
+            "source": "/",
             "has": [
                 {
                     "type": "header",
