@@ -7,11 +7,31 @@
     "anyclaw-bridge": "dist/index.js"
   },
   "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsc && node dist/index.js"
+    "dev": "tsc && node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
+  "keywords": [
+    "anyclaw",
+    "ai",
+    "agent",
+    "bridge",
+    "relay",
+    "mcp",
+    "paeanclaw"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paean-ai/anyclaw.git",
+    "directory": "bridge"
+  },
+  "homepage": "https://anyclaw.sh",
+  "license": "MIT",
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.0.0",
