@@ -74,6 +74,7 @@ detect_agent() {
   fi
 }
 
+detect_agent "0claw"      3007  "claw"
 detect_agent "paeanclaw"  3007  "claw"
 detect_agent "zeroclaw"   42617 "claw"
 detect_agent "openclaw"   3007  "claw"

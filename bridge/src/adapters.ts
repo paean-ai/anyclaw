@@ -41,8 +41,8 @@ async function readSSEStream(
 }
 
 /**
- * PaeanClaw / ZeroClaw adapter
- * Both expose POST /api/chat with SSE response.
+ * Claw adapter (PaeanClaw / ZeroClaw / 0claw / OpenClaw / NanoClaw)
+ * All expose POST /api/chat with SSE response.
  */
 export const clawAdapter: GatewayAdapter = {
   name: "claw",
@@ -141,6 +141,9 @@ export function getAdapter(type: string): GatewayAdapter {
     case "claw":
     case "paeanclaw":
     case "zeroclaw":
+    case "0claw":
+    case "openclaw":
+    case "nanoclaw":
       return clawAdapter;
     case "openai":
       return openaiAdapter;

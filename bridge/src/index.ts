@@ -78,7 +78,7 @@ function printHelp(): void {
 
   Options:
     -g, --gateway <url>     Local agent gateway URL (default: http://localhost:3007)
-    -t, --type <type>       Gateway type: claw, paeanclaw, zeroclaw, openai (default: claw)
+    -t, --type <type>       Gateway type: claw, 0claw, paeanclaw, zeroclaw, openai (default: claw)
     -k, --key <key>         ClawKey for relay authentication
     -s, --service <url>     AnyClaw service URL (default: http://localhost:4777)
     -h, --help              Show this help
@@ -90,7 +90,7 @@ function printHelp(): void {
 
   Examples:
     anyclaw-bridge -g http://localhost:3007 -k ck_g_abc123
-    anyclaw-bridge -g http://localhost:42617 -t zeroclaw -k ck_p_xyz789
+    anyclaw-bridge -g http://localhost:3007 -t 0claw -k ck_p_xyz789
 `);
 }
 

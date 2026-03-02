@@ -44,6 +44,14 @@ function run(cmd: string): boolean {
 }
 
 const VARIANTS: Record<string, Variant> = {
+  "0claw": {
+    name: "0claw",
+    description: "The absolute core. Minimal Rust agent runtime (~500 lines). MCP tools, SSE, SQLite.",
+    methods: [
+      { runtime: "curl", command: "curl -fsSL https://0.works/install.sh | bash", check: () => has("curl") },
+      { runtime: "cargo", command: "cargo install zero-claw", check: () => has("cargo") },
+    ],
+  },
   paeanclaw: {
     name: "PaeanClaw",
     description: "Ultra-minimal local AI agent runtime (~365 lines). MCP tools, web PWA, Telegram.",

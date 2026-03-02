@@ -22,6 +22,7 @@ interface ProbeTarget {
 
 const TARGETS: ProbeTarget[] = [
   { name: "PaeanClaw", port: 3007, type: "claw", healthPath: "/" },
+  { name: "0claw", port: 3007, type: "claw", healthPath: "/api/conversations" },
   { name: "ZeroClaw", port: 42617, type: "claw", healthPath: "/" },
   { name: "OpenAI-compat (LM Studio)", port: 1234, type: "openai", healthPath: "/v1/models" },
   { name: "OpenAI-compat (vLLM)", port: 8080, type: "openai", healthPath: "/v1/models" },
@@ -57,6 +58,7 @@ export async function runStatus(): Promise<void> {
   console.log(`  ${B}Installed:${D}`);
   const bins = [
     { cmd: "paeanclaw", label: "PaeanClaw" },
+    { cmd: "0claw", label: "0claw" },
     { cmd: "zeroclaw", label: "ZeroClaw" },
     { cmd: "openclaw", label: "OpenClaw" },
     { cmd: "nanoclaw", label: "NanoClaw" },
@@ -87,7 +89,7 @@ export async function runStatus(): Promise<void> {
   }
   if (!anyRunning) {
     console.log(`    ${R}●${D} No running gateways detected.`);
-    console.log(`      Start a gateway, e.g.: ${C}paeanclaw${D} or ${C}zeroclaw${D}`);
+    console.log(`      Start a gateway, e.g.: ${C}0claw${D} or ${C}paeanclaw${D}`);
   }
 
   console.log("");

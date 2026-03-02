@@ -32,7 +32,7 @@ curl -sL anyclaw.sh | bash
      anyclaw-bridge (sidecar)
            │
            ▼
-     Local Agent (paeanclaw / zeroclaw / openclaw / any OpenAI-compatible)
+     Local Agent (0claw / paeanclaw / zeroclaw / openclaw / any OpenAI-compatible)
 ```
 
 1. **Get a ClawKey** — generate a guest key instantly or sign in for a persistent one.
@@ -48,7 +48,7 @@ curl -sL anyclaw.sh | bash
 ```
 
 **What it does:**
-- Detects running agents (paeanclaw, zeroclaw, openclaw, OpenAI-compatible)
+- Detects running agents (0claw, paeanclaw, zeroclaw, openclaw, OpenAI-compatible)
 - Installs `anyclaw-bridge` via npm
 - Generates a guest ClawKey (24h TTL)
 - Starts the bridge in background
@@ -59,9 +59,11 @@ curl -sL anyclaw.sh | bash
 ### 1. Start your local agent
 
 ```bash
-paeanclaw          # default port 3007
+0claw              # default port 3007 — minimal Rust runtime
 # or
-zeroclaw           # default port 42617
+paeanclaw          # default port 3007 — Node.js/Bun runtime
+# or
+zeroclaw           # default port 42617 — full Rust agent platform
 # or any OpenAI-compatible server
 ```
 
@@ -128,6 +130,36 @@ clear             Clear terminal
 help              Show all commands
 ```
 
+## Supported Agents
+
+AnyClaw works with any local AI agent that speaks one of two protocols:
+
+### Claw Protocol (`POST /api/chat` → SSE)
+
+| Agent | Language | Install | Default Port | Description |
+|-------|----------|---------|--------------|-------------|
+| **[0claw](https://github.com/paean-ai/0claw)** | Rust | `curl -fsSL https://0.works/install.sh \| bash` | 3007 | The absolute core. ~500 lines, single binary, MCP tools, SQLite. |
+| **[PaeanClaw](https://github.com/anthropics/paeanclaw)** | TypeScript | `npm install -g paeanclaw` | 3007 | Ultra-minimal (~365 lines). MCP tools, web PWA, Telegram. |
+| **[ZeroClaw](https://github.com/anthropics/zeroclaw)** | Rust | `cargo install zeroclaw` | 42617 | Full agent platform. 50+ tools, 20+ channels, hardware support. |
+| **OpenClaw** | Python | `pip install openclaw` | 3007 | Feature-rich. 60+ tools, voice mode, 16+ platforms. |
+| **NanoClaw** | Docker | `docker pull nanoclaw/nanoclaw` | 3007 | Container-isolated. Docker/Apple Container sandboxing. |
+
+All claw agents share the same SSE streaming API:
+- `POST /api/chat` with `{"message": "...", "conversationId": "..."}` 
+- Returns SSE events: `start`, `content`, `tool_call`, `tool_result`, `done`, `error`
+
+### OpenAI Protocol (`POST /v1/chat/completions` → SSE)
+
+Any OpenAI-compatible server also works:
+
+| Server | Default Port |
+|--------|-------------|
+| LM Studio | 1234 |
+| vLLM | 8080 |
+| Ollama | 11434 |
+
+Use `--type openai` when starting the bridge for these servers.
+
 ## Architecture
 
 ```
@@ -154,7 +186,7 @@ help              Show all commands
 │  Polls relay → Claims requests → Forwards to gateway     │
 │  Pushes SSE events back → Completes requests             │
 │                                                          │
-│  Adapters: claw (paeanclaw/zeroclaw), openai             │
+│  Adapters: claw (0claw/paeanclaw/zeroclaw), openai        │
 └──────────────────┬───────────────────────────────────────┘
                    │
                    ▼
