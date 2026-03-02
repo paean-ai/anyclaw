@@ -19,6 +19,7 @@ interface BridgeConfig {
   gatewayType: string;
   clawKey: string;
   serviceUrl: string;
+  name: string;
 }
 
 function parseArgs(args: string[]): BridgeConfig {
@@ -27,6 +28,7 @@ function parseArgs(args: string[]): BridgeConfig {
     gatewayType: "claw",
     clawKey: "",
     serviceUrl: "http://localhost:4777",
+    name: "",
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -47,6 +49,10 @@ function parseArgs(args: string[]): BridgeConfig {
       case "-s":
         config.serviceUrl = args[++i];
         break;
+      case "--name":
+      case "-n":
+        config.name = args[++i];
+        break;
       case "--help":
       case "-h":
         printHelp();
@@ -59,6 +65,7 @@ function parseArgs(args: string[]): BridgeConfig {
     config.serviceUrl || process.env.ANYCLAW_SERVICE_URL || "http://localhost:4777";
   config.gatewayUrl =
     config.gatewayUrl || process.env.GATEWAY_URL || "http://localhost:3007";
+  config.name = config.name || process.env.ANYCLAW_BRIDGE_NAME || "";
 
   return config;
 }
@@ -75,16 +82,19 @@ function printHelp(): void {
     -t, --type <type>       Gateway type: claw, paeanclaw, zeroclaw, openai (default: claw)
     -k, --key <key>         ClawKey for relay authentication
     -s, --service <url>     AnyClaw service URL (default: http://localhost:4777)
+    -n, --name <name>       Display name for this gateway in the web UI
     -h, --help              Show this help
 
   Environment:
     CLAW_KEY                ClawKey (alternative to --key)
     ANYCLAW_SERVICE_URL     Service URL (alternative to --service)
     GATEWAY_URL             Gateway URL (alternative to --gateway)
+    ANYCLAW_BRIDGE_NAME     Gateway display name (alternative to --name)
 
   Examples:
     anyclaw bridge -g http://localhost:3007 -k ck_g_abc123
-    anyclaw bridge -g http://localhost:42617 -t zeroclaw -k ck_p_xyz789
+    anyclaw bridge -g http://localhost:3007 -k ck_g_abc123 --name "Primary Agent"
+    anyclaw bridge -g http://localhost:42617 -t zeroclaw -k ck_p_xyz789 -n "Monitor"
 `);
 }
 
@@ -157,7 +167,8 @@ export async function runBridge(args: string[]): Promise<void> {
 
   console.log(`\n  ▄▀█ █▄░█ █▄█ █▀▀ █░░ ▄▀█ █░█░█`);
   console.log(`  █▀█ █░▀█ ░█░ █▄▄ █▄▄ █▀█ ▀▄▀▄▀`);
-  console.log(`\n  AnyClaw Bridge v0.2.0`);
+  console.log(`\n  AnyClaw Bridge v0.2.1`);
+  if (config.name) console.log(`  Name:     ${config.name}`);
   console.log(`  Gateway:  ${config.gatewayUrl} (${config.gatewayType})`);
   console.log(`  Service:  ${config.serviceUrl}`);
   console.log(`  Key:      ${config.clawKey.slice(0, 8)}...`);

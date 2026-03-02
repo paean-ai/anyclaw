@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { createGuestKey, channelOnline } from "@/lib/api";
@@ -11,6 +11,7 @@ import {
   Wifi,
   WifiOff,
   ChevronRight,
+  Pencil,
 } from "lucide-react";
 import type { ConnectionState } from "@/types";
 
@@ -26,6 +27,52 @@ interface GatewayListProps {
   onLogin?: () => void;
 }
 
+function InlineRenameInput({
+  initialName,
+  onConfirm,
+  onCancel,
+}: {
+  initialName: string;
+  onConfirm: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const commit = () => {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== initialName) {
+      onConfirm(trimmed);
+    } else {
+      onCancel();
+    }
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") onCancel();
+        e.stopPropagation();
+      }}
+      onBlur={commit}
+      onClick={(e) => e.stopPropagation()}
+      className={cn(
+        "text-sm font-medium bg-transparent border-b border-claw-500/50",
+        "text-claw-400 outline-none w-full min-w-0 py-0 px-0"
+      )}
+    />
+  );
+}
+
 export function GatewayList({ compact, onLogin }: GatewayListProps) {
   const {
     gateways,
@@ -33,6 +80,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
     switchGateway,
     addGateway,
     removeGateway,
+    renameGateway,
     updateGatewayStatus,
   } = useApp();
   const [showAdd, setShowAdd] = useState(false);
@@ -40,6 +88,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
   const [inputName, setInputName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   const handleAddWithKey = useCallback(() => {
     const trimmed = inputKey.trim();
@@ -83,11 +132,19 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
     [removeGateway]
   );
 
+  const handleRename = useCallback(
+    (id: string, name: string) => {
+      renameGateway(id, name);
+      setRenamingId(null);
+    },
+    [renameGateway]
+  );
+
   return (
     <div className="flex flex-col gap-1">
-      {/* Gateway items */}
       {gateways.map((gw) => {
         const isActive = gw.id === activeGatewayId;
+        const isRenaming = renamingId === gw.id;
         return (
           <button
             key={gw.id}
@@ -99,7 +156,6 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
                 : "hover:bg-neutral-800/50 border border-transparent light:hover:bg-neutral-100"
             )}
           >
-            {/* Status dot */}
             <span
               className={cn(
                 "w-2 h-2 rounded-full shrink-0",
@@ -107,33 +163,44 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
               )}
             />
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span
-                  className={cn(
-                    "text-sm font-medium truncate",
-                    isActive
-                      ? "text-claw-400"
-                      : "text-neutral-300 light:text-neutral-700"
-                  )}
-                >
-                  {gw.name}
-                </span>
-                {gw.role && (
+                {isRenaming ? (
+                  <InlineRenameInput
+                    initialName={gw.name}
+                    onConfirm={(n) => handleRename(gw.id, n)}
+                    onCancel={() => setRenamingId(null)}
+                  />
+                ) : (
+                  <span
+                    className={cn(
+                      "text-sm font-medium truncate",
+                      isActive
+                        ? "text-claw-400"
+                        : "text-neutral-300 light:text-neutral-700"
+                    )}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      setRenamingId(gw.id);
+                    }}
+                    title="Double-click to rename"
+                  >
+                    {gw.name}
+                  </span>
+                )}
+                {gw.role && !isRenaming && (
                   <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-500 light:bg-neutral-200 light:text-neutral-500">
                     {gw.role}
                   </span>
                 )}
               </div>
-              {!compact && (
+              {!compact && !isRenaming && (
                 <code className="text-[10px] text-neutral-600 light:text-neutral-400 font-mono truncate block">
                   {gw.clawKey.slice(0, 8)}...{gw.clawKey.slice(-4)}
                 </code>
               )}
             </div>
 
-            {/* Status icon */}
             <div className="shrink-0 flex items-center gap-1">
               {gw.connectionState === "connected" ? (
                 <Wifi size={12} className="text-term-400" />
@@ -141,6 +208,22 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
                 <Loader2 size={12} className="text-warn-400 animate-spin" />
               ) : (
                 <WifiOff size={12} className="text-neutral-600" />
+              )}
+              {!isRenaming && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRenamingId(gw.id);
+                  }}
+                  className={cn(
+                    "opacity-0 group-hover:opacity-100 p-0.5 rounded",
+                    "text-neutral-600 hover:text-claw-400",
+                    "transition-fast"
+                  )}
+                  title="Rename"
+                >
+                  <Pencil size={11} />
+                </button>
               )}
               <button
                 onClick={(e) => handleRemove(e, gw.id)}
@@ -158,7 +241,6 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
         );
       })}
 
-      {/* Empty state */}
       {gateways.length === 0 && !showAdd && (
         <div className="text-xs text-neutral-500 px-3 py-4 text-center">
           No gateways configured.
@@ -167,7 +249,6 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
         </div>
       )}
 
-      {/* Add gateway form */}
       {showAdd ? (
         <div
           className={cn(

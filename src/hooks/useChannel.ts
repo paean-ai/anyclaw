@@ -12,6 +12,8 @@ export function useChannel() {
     updateMessage,
   } = useApp();
   const abortRef = useRef<{ abort: () => void } | null>(null);
+  const contentAccRef = useRef("");
+  const toolCallsRef = useRef<ToolCall[]>([]);
 
   const send = useCallback(
     async (text: string) => {
@@ -26,6 +28,8 @@ export function useChannel() {
       });
 
       const assistantId = nanoid(8);
+      contentAccRef.current = "";
+      toolCallsRef.current = [];
       addMessage({
         id: assistantId,
         role: "assistant",
@@ -44,34 +48,53 @@ export function useChannel() {
           (raw) => {
             const event = raw as ChannelEvent;
             if (event.type === "content") {
+              if (event.data.partial === false) {
+                contentAccRef.current = event.data.text || "";
+              } else {
+                contentAccRef.current += event.data.text || "";
+              }
               updateMessage(assistantId, {
-                content:
-                  event.data.text || "",
+                content: contentAccRef.current,
               });
             } else if (event.type === "tool_call") {
+              toolCallsRef.current = [
+                ...toolCallsRef.current,
+                {
+                  id: event.data.id || nanoid(6),
+                  name: event.data.name || "unknown",
+                  status: "running",
+                },
+              ];
               updateMessage(assistantId, {
-                toolCalls: [
-                  ...([] as ToolCall[]),
-                  {
-                    id: event.data.id || nanoid(6),
-                    name: event.data.name || "unknown",
-                    status: "running",
-                  },
-                ],
+                toolCalls: [...toolCallsRef.current],
               });
             } else if (event.type === "tool_result") {
-              // handled by content updates
+              const toolName = event.data.name;
+              toolCallsRef.current = toolCallsRef.current.map((tc) =>
+                tc.name === toolName && tc.status === "running"
+                  ? { ...tc, status: "completed" as const }
+                  : tc
+              );
+              updateMessage(assistantId, {
+                toolCalls: [...toolCallsRef.current],
+              });
             }
           },
           () => {
-            updateMessage(assistantId, { isStreaming: false });
+            toolCallsRef.current = toolCallsRef.current.map((tc) => ({
+              ...tc,
+              status: "completed" as const,
+            }));
+            updateMessage(assistantId, {
+              isStreaming: false,
+              toolCalls: [...toolCallsRef.current],
+            });
             abortRef.current = null;
           },
           (err) => {
             updateMessage(assistantId, {
               isStreaming: false,
-              content:
-                `Error: ${err}`,
+              content: contentAccRef.current || `Error: ${err}`,
             });
             abortRef.current = null;
           }

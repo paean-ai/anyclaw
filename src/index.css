@@ -302,3 +302,30 @@ body {
 .pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
 }
+
+/* ============================================
+   Shimmer / Glow sweep for thinking indicator
+   ============================================ */
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.terminal-shimmer {
+  background: linear-gradient(90deg,
+      rgba(115, 115, 115, 1) 0%,
+      rgba(34, 211, 238, 0.9) 40%,
+      rgba(139, 92, 246, 0.8) 60%,
+      rgba(115, 115, 115, 1) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-sweep 2.5s ease-in-out infinite;
+}

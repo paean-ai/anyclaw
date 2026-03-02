@@ -13,39 +13,34 @@ import { APP_VERSION } from "@/config/env";
 
 const HELP_TEXT = `Available commands:
 
-  connect [key]   Connect using a ClawKey (or paste one directly)
-  disconnect      Disconnect from local agent
-  guest           Generate a temporary guest key
-  refresh         Regenerate current key (persistent keys, requires auth)
-  share           Show share URL for cross-device access
-  install         Show one-line install command
-  status          Show connection status
-  key             Show current ClawKey
-  gateways        List all configured gateways
-  switch <name>   Switch active gateway
-  add [key]       Add a new gateway (with optional key)
-  remove <name>   Remove a gateway
-  clear           Clear terminal
-  gui             Switch to graphical UI mode
-  help            Show this help
-  version         Show version
+  connect [key]       Connect using a ClawKey (or paste one directly)
+  disconnect          Disconnect from local agent
+  guest               Generate a temporary guest key
+  refresh             Regenerate current key (persistent keys, requires auth)
+  share               Show share URL for cross-device access
+  install             Show one-line install command
+  status              Show connection status
+  key                 Show current ClawKey
+  gateways            List all configured gateways with status
+  switch <name|num>   Switch active gateway by name or number
+  add [key] [--name]  Add a new gateway (with optional key and name)
+  rename <old> <new>  Rename a gateway
+  remove <name>       Remove a gateway
+  clear               Clear terminal
+  gui                 Switch to graphical UI mode
+  help                Show this help
+  version             Show version
 
 Setup (non-invasive — no changes to your agent):
   1. Start your agent: paeanclaw, zeroclaw, or any OpenAI-compatible server
-  2. Run: anyclaw bridge -g http://localhost:3007 -k <your-key>
+  2. Run: anyclaw bridge -g http://localhost:3007 -k <your-key> --name "My Agent"
   3. Type "guest" here to get a key, then use it in step 2
   — Or simply run: curl -sL anyclaw.sh | bash
 
-Multi-gateway: run multiple bridges with different keys, then use 'gateways' and 'switch'.`;
+Multi-gateway: add multiple keys and use 'gateways' / 'switch' to manage them.`;
 
-const WELCOME_TEXT = `Welcome to AnyClaw — access your local agent from anywhere.
-
-To get started:
-  • Type "guest" to generate a temporary ClawKey
-  • Type "help" to see all available commands
-  • Or paste a ClawKey (ck_...) directly
-
-Quick setup:  curl -sL anyclaw.sh | bash`;
+const WELCOME_TEXT = `Type "guest" to get a key, "help" for all commands, or paste a ClawKey (ck_...).
+Quick setup: curl -sL anyclaw.sh | bash`;
 
 export function ShellPage() {
   const {
@@ -64,6 +59,7 @@ export function ShellPage() {
     switchGateway,
     addGateway,
     removeGateway,
+    renameGateway,
     updateGatewayStatus,
   } = useApp();
   const { send } = useChannel();
@@ -147,27 +143,39 @@ export function ShellPage() {
             systemMsg("No gateways configured. Use 'guest' or 'add <key>' to add one.");
             break;
           }
-          const lines = gateways.map((gw) => {
+          const lines = gateways.map((gw, idx) => {
             const active = gw.id === activeGateway?.id ? " *" : "  ";
+            const num = `${idx + 1}.`.padEnd(3);
             const status = gw.connectionState === "connected" ? "online" : "offline";
             const role = gw.role ? ` [${gw.role}]` : "";
-            return `${active} ${gw.name.padEnd(16)} ${status.padEnd(8)} ${gw.clawKey.slice(0, 8)}...${role}`;
+            return `${active}${num} ${gw.name.padEnd(16)} ${status.padEnd(8)} ${gw.clawKey.slice(0, 8)}...${role}`;
           });
-          systemMsg("Gateways (* = active):\n\n" + lines.join("\n"));
+          systemMsg("Gateways (* = active):\n\n" + lines.join("\n") +
+            "\n\nSwitch: 'switch <name>' or 'switch <number>'");
           break;
         }
 
         case "switch": {
-          const name = rawArgs.join(" ");
-          if (!name) {
-            systemMsg('Usage: switch <name>');
+          const arg = rawArgs.join(" ");
+          if (!arg) {
+            if (gateways.length <= 1) {
+              systemMsg("Only one gateway configured.");
+              break;
+            }
+            const currentIdx = gateways.findIndex((g) => g.id === activeGateway?.id);
+            const nextIdx = (currentIdx + 1) % gateways.length;
+            switchGateway(gateways[nextIdx].id);
+            systemMsg(`Switched to ${gateways[nextIdx].name}.`);
             break;
           }
-          const target = gateways.find(
-            (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
-          );
+          const numMatch = /^\d+$/.test(arg);
+          const target = numMatch
+            ? gateways[parseInt(arg, 10) - 1]
+            : gateways.find(
+                (g) => g.name.toLowerCase() === arg.toLowerCase() || g.id === arg
+              );
           if (!target) {
-            systemMsg(`Gateway "${name}" not found. Type 'gateways' to list.`);
+            systemMsg(`Gateway "${arg}" not found. Type 'gateways' to list.`);
             break;
           }
           switchGateway(target.id);
@@ -176,9 +184,17 @@ export function ShellPage() {
         }
 
         case "add": {
-          const key = rawArgs[0];
-          if (key && key.startsWith("ck_")) {
-            const gw = addGateway(key);
+          let key = "";
+          let name = "";
+          for (let i = 0; i < rawArgs.length; i++) {
+            if (rawArgs[i] === "--name" || rawArgs[i] === "-n") {
+              name = rawArgs.slice(i + 1).join(" ");
+              break;
+            }
+            if (!key && rawArgs[i].startsWith("ck_")) key = rawArgs[i];
+          }
+          if (key) {
+            const gw = addGateway(key, null, name || undefined);
             systemMsg(`Added gateway "${gw.name}" with key ${key.slice(0, 8)}...`);
             const online = await channelOnline(key);
             updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
@@ -187,7 +203,7 @@ export function ShellPage() {
             systemMsg("Generating guest key...");
             try {
               const info = await createGuestKey();
-              const gw = addGateway(info.key, info);
+              const gw = addGateway(info.key, info, name || undefined);
               systemMsg(`Added gateway "${gw.name}" with guest key.`);
               const online = await channelOnline(info.key);
               updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
@@ -198,15 +214,50 @@ export function ShellPage() {
           break;
         }
 
+        case "rename": {
+          if (rawArgs.length < 2) {
+            systemMsg('Usage: rename <number|name> <new-name>\nExample: rename 1 Primary');
+            break;
+          }
+          let target = null;
+          let newName = "";
+          if (/^\d+$/.test(rawArgs[0])) {
+            target = gateways[parseInt(rawArgs[0], 10) - 1] ?? null;
+            newName = rawArgs.slice(1).join(" ");
+          } else {
+            for (let len = rawArgs.length - 1; len >= 1; len--) {
+              const tryName = rawArgs.slice(0, len).join(" ");
+              const found = gateways.find(
+                (g) => g.name.toLowerCase() === tryName.toLowerCase()
+              );
+              if (found) {
+                target = found;
+                newName = rawArgs.slice(len).join(" ");
+                break;
+              }
+            }
+          }
+          if (!target || !newName) {
+            systemMsg(`Gateway not found. Try: rename <number> <new-name>`);
+            break;
+          }
+          renameGateway(target.id, newName);
+          systemMsg(`Renamed to "${newName}".`);
+          break;
+        }
+
         case "remove": {
           const name = rawArgs.join(" ");
           if (!name) {
             systemMsg('Usage: remove <name>');
             break;
           }
-          const target = gateways.find(
-            (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
-          );
+          const numMatch = /^\d+$/.test(name);
+          const target = numMatch
+            ? gateways[parseInt(name, 10) - 1]
+            : gateways.find(
+                (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
+              );
           if (!target) {
             systemMsg(`Gateway "${name}" not found.`);
             break;
@@ -371,6 +422,7 @@ This installs the bridge, generates a key, and connects automatically.`);
       systemMsg,
       addGateway,
       removeGateway,
+      renameGateway,
       switchGateway,
       updateGatewayStatus,
     ]
