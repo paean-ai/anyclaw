@@ -3,7 +3,7 @@ import { useApp } from "@/contexts/AppContext";
 import { channelOnline } from "@/lib/api";
 
 export function useConnection() {
-  const { clawKey, connectionState, setConnectionState } = useApp();
+  const { clawKey, connectionState, setConnectionState, activeGatewayId } = useApp();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const checkOnline = useCallback(async () => {
@@ -37,7 +37,7 @@ export function useConnection() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [clawKey, connect, checkOnline, setConnectionState]);
+  }, [clawKey, activeGatewayId, connect, checkOnline, setConnectionState]);
 
   const disconnect = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);

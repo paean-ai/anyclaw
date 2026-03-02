@@ -16,6 +16,16 @@ export type ConnectionState = "disconnected" | "connecting" | "connected" | "err
 
 export type AppMode = "shell" | "dev";
 
+export interface GatewayProfile {
+  id: string;
+  name: string;
+  clawKey: string;
+  keyInfo: ClawKeyInfo | null;
+  connectionState: ConnectionState;
+  lastSeen: number | null;
+  role?: string;
+}
+
 export interface ChannelEvent {
   type: "content" | "tool_call" | "tool_result" | "done" | "error";
   data: {

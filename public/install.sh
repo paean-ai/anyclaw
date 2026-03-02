@@ -93,14 +93,14 @@ GATEWAY="${GATEWAY_URL:-${DETECTED_GW:-http://localhost:3007}}"
 GW_TYPE="${GATEWAY_TYPE:-${DETECTED_TYPE:-claw}}"
 info "Gateway: $GATEWAY ($GW_TYPE)"
 
-# ── Install anyclaw-bridge ──────────────────────────────
-if command -v anyclaw-bridge >/dev/null 2>&1; then
-  ok "anyclaw-bridge already installed"
+# ── Install anyclaw CLI ────────────────────────────────
+if command -v anyclaw >/dev/null 2>&1; then
+  ok "anyclaw CLI already installed"
 else
-  info "Installing anyclaw-bridge..."
-  npm install -g anyclaw-bridge@latest 2>/dev/null || \
-    npm install -g anyclaw-bridge@latest
-  ok "anyclaw-bridge installed"
+  info "Installing anyclaw CLI..."
+  npm install -g anyclaw@latest 2>/dev/null || \
+    npm install -g anyclaw@latest
+  ok "anyclaw CLI installed"
 fi
 
 # ── Generate guest ClawKey ──────────────────────────────
@@ -118,8 +118,8 @@ echo "  This guest key expires in 24 hours."
 echo ""
 
 # ── Start bridge in background ──────────────────────────
-info "Starting anyclaw-bridge..."
-anyclaw-bridge \
+info "Starting anyclaw bridge..."
+anyclaw bridge \
   --gateway "$GATEWAY" \
   --type "$GW_TYPE" \
   --key "$CLAW_KEY" \
@@ -149,7 +149,7 @@ printf "  Gateway:  ${C}$GATEWAY ($GW_TYPE)${D}\n"
 printf "  Key:      ${C}$CLAW_KEY${D}\n"
 echo ""
 echo "  To stop the bridge: kill $BRIDGE_PID"
-echo "  To reconnect later: anyclaw-bridge -g $GATEWAY -k $CLAW_KEY"
+  echo "  To reconnect later: anyclaw bridge -g $GATEWAY -k $CLAW_KEY"
 printf "  ${G}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${D}\n"
 echo ""
 

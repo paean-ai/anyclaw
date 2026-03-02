@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
+import { useGatewayPoller } from "@/hooks/useGatewayPoller";
 import { Logo } from "@/components/shared/Logo";
 import { ConnectionStatus } from "@/components/shared/ConnectionStatus";
-import { KeyManager } from "@/components/shared/KeyManager";
+import { GatewayList } from "@/components/shared/GatewayList";
 import { AuthModal } from "@/components/shared/AuthModal";
 import {
-  Settings,
   Moon,
   Sun,
   Trash2,
@@ -24,6 +24,8 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
   const { theme, setThemeMode, connectionState, clearMessages, setMode } =
     useApp();
   const [showAuth, setShowAuth] = useState(false);
+
+  useGatewayPoller();
 
   if (collapsed) {
     return (
@@ -85,25 +87,22 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
           </button>
         </div>
 
-        {/* Connection */}
+        {/* Gateways */}
         <div
           className={cn(
-            "px-4 py-3",
+            "px-3 py-3 flex-1 overflow-y-auto",
             "border-b",
             "border-neutral-800/50 dark:border-neutral-800/50 light:border-neutral-200/50"
           )}
         >
           <div className="flex items-center justify-between mb-2.5">
             <span className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
-              Connection
+              Gateways
             </span>
             <ConnectionStatus state={connectionState} compact />
           </div>
-          <KeyManager variant="inline" onLogin={() => setShowAuth(true)} />
+          <GatewayList onLogin={() => setShowAuth(true)} />
         </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
 
         {/* Footer controls */}
         <div
@@ -155,16 +154,6 @@ export function DevSidebar({ collapsed, onToggle }: DevSidebarProps) {
             <span className="whitespace-nowrap">
               {theme === "dark" ? "Light Mode" : "Dark Mode"}
             </span>
-          </button>
-          <button
-            disabled
-            className={cn(
-              "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm",
-              "text-neutral-600 opacity-50 cursor-not-allowed"
-            )}
-          >
-            <Settings size={15} />
-            <span className="whitespace-nowrap">Settings</span>
           </button>
         </div>
       </div>

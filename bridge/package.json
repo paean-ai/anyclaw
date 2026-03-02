@@ -1,19 +1,20 @@
 {
-  "name": "anyclaw-bridge",
-  "version": "0.1.0",
-  "description": "AnyClaw Bridge — connects any local AI agent gateway to the AnyClaw relay",
+  "name": "anyclaw",
+  "version": "0.2.0",
+  "description": "AnyClaw CLI — bridge, install, and manage local AI agent gateways",
   "type": "module",
   "bin": {
-    "anyclaw-bridge": "dist/index.js"
+    "anyclaw": "dist/cli.js",
+    "anyclaw-bridge": "dist/cli.js"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/cli.js",
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsc && node dist/index.js",
+    "start": "node dist/cli.js",
+    "dev": "tsc && node dist/cli.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -23,7 +24,11 @@
     "bridge",
     "relay",
     "mcp",
-    "paeanclaw"
+    "paeanclaw",
+    "zeroclaw",
+    "openclaw",
+    "nanoclaw",
+    "cli"
   ],
   "repository": {
     "type": "git",

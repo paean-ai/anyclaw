@@ -3,6 +3,7 @@ import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { useChannel } from "@/hooks/useChannel";
 import { useConnection } from "@/hooks/useConnection";
+import { useGatewayPoller } from "@/hooks/useGatewayPoller";
 import { createGuestKey, channelOnline, regenerateKey } from "@/lib/api";
 import { TerminalBoot } from "./TerminalBoot";
 import { Terminal } from "./Terminal";
@@ -20,6 +21,10 @@ const HELP_TEXT = `Available commands:
   install         Show one-line install command
   status          Show connection status
   key             Show current ClawKey
+  gateways        List all configured gateways
+  switch <name>   Switch active gateway
+  add [key]       Add a new gateway (with optional key)
+  remove <name>   Remove a gateway
   clear           Clear terminal
   gui             Switch to graphical UI mode
   help            Show this help
@@ -27,11 +32,11 @@ const HELP_TEXT = `Available commands:
 
 Setup (non-invasive — no changes to your agent):
   1. Start your agent: paeanclaw, zeroclaw, or any OpenAI-compatible server
-  2. Run the bridge: anyclaw-bridge -g http://localhost:3007 -k <your-key>
+  2. Run: anyclaw bridge -g http://localhost:3007 -k <your-key>
   3. Type "guest" here to get a key, then use it in step 2
   — Or simply run: curl -sL anyclaw.sh | bash
 
-The bridge connects your local agent to this terminal. Zero source changes.`;
+Multi-gateway: run multiple bridges with different keys, then use 'gateways' and 'switch'.`;
 
 const WELCOME_TEXT = `Welcome to AnyClaw — access your local agent from anywhere.
 
@@ -54,6 +59,12 @@ export function ShellPage() {
     addMessage,
     clearMessages,
     setMode,
+    gateways,
+    activeGateway,
+    switchGateway,
+    addGateway,
+    removeGateway,
+    updateGatewayStatus,
   } = useApp();
   const { send } = useChannel();
   const { checkOnline } = useConnection();
@@ -62,8 +73,10 @@ export function ShellPage() {
   const processingRef = useRef(false);
   const welcomeSentRef = useRef(false);
 
+  useGatewayPoller();
+
   const prompt = connectionState === "connected"
-    ? "anyclaw@local:~$ "
+    ? `anyclaw@${activeGateway?.name?.toLowerCase().replace(/\s+/g, "-") || "local"}:~$ `
     : "anyclaw@web:~$ ";
 
   const systemMsg = useCallback(
@@ -80,10 +93,8 @@ export function ShellPage() {
 
   const handleBootComplete = useCallback(() => {
     setBooted(true);
-    // Emit welcome message into the terminal after boot
     if (!welcomeSentRef.current) {
       welcomeSentRef.current = true;
-      // Slight delay so terminal mounts first
       setTimeout(() => {
         systemMsg(WELCOME_TEXT);
       }, 100);
@@ -96,25 +107,26 @@ export function ShellPage() {
 
       // Direct ClawKey paste
       if (input.startsWith("ck_")) {
-        setClawKey(input);
+        const gw = addGateway(input);
         setConnectionState("connecting");
         systemMsg(`Key set. Checking agent status...`);
         try {
           const online = await channelOnline(input);
-          setConnectionState(online ? "connected" : "disconnected");
+          updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
           systemMsg(
             online
-              ? "✓ Connected to local agent."
-              : "Key accepted. Local agent is offline — start openclaw or paeanclaw to connect."
+              ? "Connected to local agent."
+              : "Key accepted. Local agent is offline — start your agent and bridge to connect."
           );
         } catch {
-          setConnectionState("error");
-          systemMsg("✗ Failed to verify key.");
+          updateGatewayStatus(gw.id, "error");
+          systemMsg("Failed to verify key.");
         }
         return;
       }
 
-      const [cmd, ...args] = input.toLowerCase().split(/\s+/);
+      const [cmd] = input.toLowerCase().split(/\s+/);
+      const rawArgs = input.split(/\s+/).slice(1);
 
       switch (cmd) {
         case "help":
@@ -129,37 +141,105 @@ export function ShellPage() {
           clearMessages();
           break;
 
+        case "gateways":
+        case "gw": {
+          if (gateways.length === 0) {
+            systemMsg("No gateways configured. Use 'guest' or 'add <key>' to add one.");
+            break;
+          }
+          const lines = gateways.map((gw) => {
+            const active = gw.id === activeGateway?.id ? " *" : "  ";
+            const status = gw.connectionState === "connected" ? "online" : "offline";
+            const role = gw.role ? ` [${gw.role}]` : "";
+            return `${active} ${gw.name.padEnd(16)} ${status.padEnd(8)} ${gw.clawKey.slice(0, 8)}...${role}`;
+          });
+          systemMsg("Gateways (* = active):\n\n" + lines.join("\n"));
+          break;
+        }
+
+        case "switch": {
+          const name = rawArgs.join(" ");
+          if (!name) {
+            systemMsg('Usage: switch <name>');
+            break;
+          }
+          const target = gateways.find(
+            (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
+          );
+          if (!target) {
+            systemMsg(`Gateway "${name}" not found. Type 'gateways' to list.`);
+            break;
+          }
+          switchGateway(target.id);
+          systemMsg(`Switched to ${target.name}.`);
+          break;
+        }
+
+        case "add": {
+          const key = rawArgs[0];
+          if (key && key.startsWith("ck_")) {
+            const gw = addGateway(key);
+            systemMsg(`Added gateway "${gw.name}" with key ${key.slice(0, 8)}...`);
+            const online = await channelOnline(key);
+            updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
+            systemMsg(online ? "Connected." : "Agent is offline.");
+          } else {
+            systemMsg("Generating guest key...");
+            try {
+              const info = await createGuestKey();
+              const gw = addGateway(info.key, info);
+              systemMsg(`Added gateway "${gw.name}" with guest key.`);
+              const online = await channelOnline(info.key);
+              updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
+            } catch (err) {
+              systemMsg(`Error: ${err instanceof Error ? err.message : "Failed"}`);
+            }
+          }
+          break;
+        }
+
+        case "remove": {
+          const name = rawArgs.join(" ");
+          if (!name) {
+            systemMsg('Usage: remove <name>');
+            break;
+          }
+          const target = gateways.find(
+            (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
+          );
+          if (!target) {
+            systemMsg(`Gateway "${name}" not found.`);
+            break;
+          }
+          removeGateway(target.id);
+          systemMsg(`Removed ${target.name}.`);
+          break;
+        }
+
         case "guest": {
           systemMsg("Generating guest key...");
           try {
             const info = await createGuestKey();
-            setClawKey(info.key);
-            setKeyInfo(info);
-            systemMsg(`✓ Guest key created: ${info.key}`);
-            systemMsg("This key expires in 24 hours. Use 'connect' to link.");
+            const gw = addGateway(info.key, info);
+            systemMsg(`Guest key created: ${info.key}`);
+            systemMsg("This key expires in 24 hours.");
             const online = await channelOnline(info.key);
-            setConnectionState(online ? "connected" : "disconnected");
+            updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
             if (!online) {
-              systemMsg(
-                "Local agent is offline. Run your agent and bridge to connect."
-              );
+              systemMsg("Local agent is offline. Run your agent and bridge to connect.");
             } else {
-              systemMsg("✓ Connected to local agent. You can now chat.");
+              systemMsg("Connected to local agent. You can now chat.");
             }
           } catch (err) {
-            systemMsg(
-              `✗ Error: ${err instanceof Error ? err.message : "Failed"}`
-            );
+            systemMsg(`Error: ${err instanceof Error ? err.message : "Failed"}`);
           }
           break;
         }
 
         case "connect": {
-          const key = args[0] || clawKey;
+          const key = rawArgs[0] || clawKey;
           if (!key) {
-            systemMsg(
-              'No key provided. Use "connect ck_..." or "guest" to get one.'
-            );
+            systemMsg('No key provided. Use "connect ck_..." or "guest" to get one.');
             break;
           }
           if (!key.startsWith("ck_")) {
@@ -172,14 +252,10 @@ export function ShellPage() {
           try {
             const online = await channelOnline(key);
             setConnectionState(online ? "connected" : "disconnected");
-            systemMsg(
-              online
-                ? "✓ Connected to local agent."
-                : "Key accepted. Agent is offline."
-            );
+            systemMsg(online ? "Connected to local agent." : "Key accepted. Agent is offline.");
           } catch {
             setConnectionState("error");
-            systemMsg("✗ Connection error.");
+            systemMsg("Connection error.");
           }
           break;
         }
@@ -191,10 +267,16 @@ export function ShellPage() {
           break;
 
         case "status":
-          systemMsg(`Connection: ${connectionState}`);
-          systemMsg(`Key: ${clawKey ? `${clawKey.slice(0, 8)}...${clawKey.slice(-6)}` : "none"}`);
-          if (clawKey) {
-            systemMsg(`Key type: ${keyInfo?.type || "unknown"}`);
+          if (gateways.length === 0) {
+            systemMsg("No gateways configured.");
+          } else {
+            systemMsg(`Active: ${activeGateway?.name || "none"}`);
+            systemMsg(`Connection: ${connectionState}`);
+            systemMsg(`Key: ${clawKey ? `${clawKey.slice(0, 8)}...${clawKey.slice(-6)}` : "none"}`);
+            if (clawKey) {
+              systemMsg(`Key type: ${keyInfo?.type || "unknown"}`);
+            }
+            systemMsg(`Total gateways: ${gateways.length}`);
           }
           await checkOnline();
           break;
@@ -219,9 +301,9 @@ export function ShellPage() {
             const updated = await regenerateKey(authToken, keyInfo.id);
             setClawKey(updated.key);
             setKeyInfo(updated);
-            systemMsg(`✓ New key: ${updated.key}`);
+            systemMsg(`New key: ${updated.key}`);
           } catch (err) {
-            systemMsg(`✗ Error: ${err instanceof Error ? err.message : "Failed"}`);
+            systemMsg(`Error: ${err instanceof Error ? err.message : "Failed"}`);
           }
           break;
         }
@@ -265,13 +347,9 @@ This installs the bridge, generates a key, and connects automatically.`);
             processingRef.current = false;
             setProcessing(false);
           } else {
-            systemMsg(
-              `Unknown command: ${cmd}. Type "help" for available commands.`
-            );
+            systemMsg(`Unknown command: ${cmd}. Type "help" for available commands.`);
             if (!clawKey) {
-              systemMsg(
-                'Tip: paste a ClawKey directly, or type "guest" to get one.'
-              );
+              systemMsg('Tip: paste a ClawKey directly, or type "guest" to get one.');
             }
           }
       }
@@ -279,6 +357,8 @@ This installs the bridge, generates a key, and connects automatically.`);
     [
       clawKey,
       connectionState,
+      gateways,
+      activeGateway,
       setClawKey,
       setKeyInfo,
       keyInfo,
@@ -289,6 +369,10 @@ This installs the bridge, generates a key, and connects automatically.`);
       send,
       checkOnline,
       systemMsg,
+      addGateway,
+      removeGateway,
+      switchGateway,
+      updateGatewayStatus,
     ]
   );
 
@@ -314,10 +398,17 @@ This installs the bridge, generates a key, and connects automatically.`);
             <div className="w-3 h-3 rounded-full bg-term-400/80" />
           </div>
           <span className="font-terminal text-xs text-neutral-500">
-            anyclaw.sh
+            {activeGateway ? `anyclaw.sh — ${activeGateway.name}` : "anyclaw.sh"}
           </span>
         </div>
-        <ConnectionStatus state={connectionState} compact />
+        <div className="flex items-center gap-2">
+          {gateways.length > 1 && (
+            <span className="text-[10px] text-neutral-600 font-mono">
+              {gateways.filter((g) => g.connectionState === "connected").length}/{gateways.length}
+            </span>
+          )}
+          <ConnectionStatus state={connectionState} compact />
+        </div>
       </div>
 
       {/* Terminal body */}
