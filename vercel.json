@@ -4,6 +4,17 @@
     "outputDirectory": "dist",
     "rewrites": [
         {
+            "source": "/()",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": "^(curl|wget|fetch|httpie|Wget).*"
+                }
+            ],
+            "destination": "/install.sh"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
