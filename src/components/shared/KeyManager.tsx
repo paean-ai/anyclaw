@@ -29,8 +29,21 @@ function getShareUrl(key: string): string {
   return `${base}?claw_key=${encodeURIComponent(key)}`;
 }
 
-function QrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
+function QrOverlay({
+  url,
+  onClose,
+  gatewayName,
+  clawKey: qrKey,
+  connectionState,
+}: {
+  url: string;
+  onClose: () => void;
+  gatewayName?: string;
+  clawKey?: string | null;
+  connectionState?: string;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [copied, setCopied] = useState<"key" | "url" | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -40,6 +53,13 @@ function QrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
       color: { dark: "#000000", light: "#ffffff" },
     });
   }, [url]);
+
+  const copyText = (text: string, what: "key" | "url") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(what);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
@@ -60,9 +80,53 @@ function QrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
             <X size={16} />
           </button>
         </div>
-        <div className="flex justify-center p-4 bg-neutral-950 rounded-lg">
+        <div className="flex justify-center p-4 bg-neutral-950 light:bg-neutral-100 rounded-lg">
           <canvas ref={canvasRef} className="rounded" />
         </div>
+
+        {qrKey && (
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] w-12 shrink-0", "text-neutral-600 light:text-neutral-400")}>GATEWAY</span>
+              <span className={cn("text-xs truncate flex-1", "text-neutral-300 light:text-neutral-700")}>{gatewayName || "—"}</span>
+              <span className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded",
+                connectionState === "connected"
+                  ? "text-term-400 bg-term-400/10"
+                  : "text-neutral-500 bg-neutral-800 light:bg-neutral-200"
+              )}>
+                {connectionState === "connected" ? "online" : "offline"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] w-12 shrink-0", "text-neutral-600 light:text-neutral-400")}>KEY</span>
+              <code className={cn("text-xs truncate flex-1 font-mono", "text-neutral-400 light:text-neutral-600")}>
+                {qrKey.slice(0, 8)}...{qrKey.slice(-6)}
+              </code>
+              <button
+                onClick={() => copyText(qrKey, "key")}
+                className={cn("transition-fast shrink-0", "text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700")}
+                title="Copy key"
+              >
+                {copied === "key" ? <Check size={13} className="text-term-400" /> : <Copy size={13} />}
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] w-12 shrink-0", "text-neutral-600 light:text-neutral-400")}>URL</span>
+              <code className={cn("text-[10px] truncate flex-1 font-mono", "text-neutral-500 light:text-neutral-400")}>
+                {url.replace(/^https?:\/\//, "").slice(0, 32)}...
+              </code>
+              <button
+                onClick={() => copyText(url, "url")}
+                className={cn("transition-fast shrink-0", "text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700")}
+                title="Copy URL"
+              >
+                {copied === "url" ? <Check size={13} className="text-term-400" /> : <Copy size={13} />}
+              </button>
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-neutral-500 text-center">
           Open this QR from your phone to connect with the same ClawKey
         </p>
@@ -72,7 +136,7 @@ function QrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
 }
 
 export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
-  const { clawKey, setClawKey, setKeyInfo, keyInfo, authToken } = useApp();
+  const { clawKey, setClawKey, setKeyInfo, keyInfo, authToken, activeGateway } = useApp();
   const [inputKey, setInputKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<"key" | "url" | null>(null);
@@ -253,7 +317,15 @@ export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {
           {error && <div className="text-xs text-error-400 px-1">{error}</div>}
         </div>
 
-        {showQr && <QrOverlay url={getShareUrl(clawKey)} onClose={() => setShowQr(false)} />}
+        {showQr && (
+          <QrOverlay
+            url={getShareUrl(clawKey)}
+            onClose={() => setShowQr(false)}
+            gatewayName={activeGateway?.name}
+            clawKey={clawKey}
+            connectionState={activeGateway?.connectionState}
+          />
+        )}
       </>
     );
   }

@@ -69,7 +69,7 @@ zeroclaw           # default port 42617 — full Rust agent platform
 
 ### 2. Get a ClawKey
 
-Visit [anyclaw.sh](https://anyclaw.sh) and type `guest` in the terminal, or use the web UI to generate one.
+Visit [anyclaw.sh](https://anyclaw.sh) and type `/guest` in the terminal, or use the web UI to generate one.
 
 ### 3. Run the bridge
 
@@ -117,17 +117,22 @@ Share your ClawKey across devices:
 
 ### Shell Commands
 
+All system commands use a `/` prefix. When connected, text without `/` is sent as chat.
+
 ```
-guest             Generate a temporary guest key
-connect [key]     Connect using a ClawKey
-disconnect        Disconnect from local agent
-refresh           Regenerate key (persistent keys, requires auth)
-share             Show share URL for cross-device access
-install           Show one-line install command
-status            Show connection status
-key               Show current ClawKey
-clear             Clear terminal
-help              Show all commands
+/guest             Generate a temporary guest key
+/connect [key]     Connect using a ClawKey
+/disconnect        Disconnect from local agent
+/refresh           Regenerate key (persistent keys, requires auth)
+/share             Show share URL for cross-device access
+/qr                Show QR code for mobile app to scan
+/install           Show one-line install command
+/status            Show connection status
+/key               Show current ClawKey
+/gateways          List all gateways with status
+/switch <name>     Switch active gateway
+/clear             Clear terminal
+/help              Show all commands
 ```
 
 ## Supported Agents

@@ -5,6 +5,7 @@ import { useChannel } from "@/hooks/useChannel";
 import { useConnection } from "@/hooks/useConnection";
 import { useGatewayPoller } from "@/hooks/useGatewayPoller";
 import { createGuestKey, channelOnline, regenerateKey } from "@/lib/api";
+import { Copy, Check as CheckIcon } from "lucide-react";
 import { TerminalBoot } from "./TerminalBoot";
 import { Terminal } from "./Terminal";
 import { ConnectionStatus } from "@/components/shared/ConnectionStatus";
@@ -15,34 +16,34 @@ import { X } from "lucide-react";
 
 const HELP_TEXT = `Available commands:
 
-  connect [key]       Connect using a ClawKey (or paste one directly)
-  disconnect          Disconnect from local agent
-  guest               Generate a temporary guest key
-  refresh             Regenerate current key (persistent keys, requires auth)
-  share               Show share URL for cross-device access
-  qr                  Show QR code for mobile app to scan
-  install             Show one-line install command
-  status              Show connection status
-  key                 Show current ClawKey
-  gateways            List all configured gateways with status
-  switch <name|num>   Switch active gateway by name or number
-  add [key] [--name]  Add a new gateway (with optional key and name)
-  rename <old> <new>  Rename a gateway
-  remove <name>       Remove a gateway
-  clear               Clear terminal
-  gui                 Switch to graphical UI mode
-  help                Show this help
-  version             Show version
+  /connect [key]       Connect using a ClawKey (or paste one directly)
+  /disconnect          Disconnect from local agent
+  /guest               Generate a temporary guest key
+  /refresh             Regenerate current key (persistent keys, requires auth)
+  /share               Show share URL for cross-device access
+  /qr                  Show QR code for mobile app to scan
+  /install             Show one-line install command
+  /status              Show connection status
+  /key                 Show current ClawKey
+  /gateways            List all configured gateways with status
+  /switch <name|num>   Switch active gateway by name or number
+  /add [key] [--name]  Add a new gateway (with optional key and name)
+  /rename <old> <new>  Rename a gateway
+  /remove <name>       Remove a gateway
+  /clear               Clear terminal
+  /gui                 Switch to graphical UI mode
+  /help                Show this help
+  /version             Show version
 
 Setup (non-invasive — no changes to your agent):
   1. Start your agent: paeanclaw, zeroclaw, or any OpenAI-compatible server
   2. Run: anyclaw bridge -g http://localhost:3007 -k <your-key> --name "My Agent"
-  3. Type "guest" here to get a key, then use it in step 2
+  3. Type "/guest" here to get a key, then use it in step 2
   — Or simply run: curl -sL anyclaw.sh | bash
 
-Multi-gateway: add multiple keys and use 'gateways' / 'switch' to manage them.`;
+When connected, type freely to chat. Use /commands for system actions.`;
 
-const WELCOME_TEXT = `Type "guest" to get a key, "help" for all commands, or paste a ClawKey (ck_...).
+const WELCOME_TEXT = `Type "/guest" to get a key, "/help" for all commands, or paste a ClawKey (ck_...).
 Quick setup: curl -sL anyclaw.sh | bash`;
 
 export function ShellPage() {
@@ -125,8 +126,11 @@ export function ShellPage() {
         return;
       }
 
-      const [cmd] = input.toLowerCase().split(/\s+/);
-      const rawArgs = input.split(/\s+/).slice(1);
+      // Strip leading / for slash commands
+      const normalized = input.startsWith("/") ? input.slice(1) : input;
+      const isSlashCmd = input.startsWith("/");
+      const [cmd] = normalized.toLowerCase().split(/\s+/);
+      const rawArgs = normalized.split(/\s+/).slice(1);
 
       switch (cmd) {
         case "help":
@@ -144,7 +148,7 @@ export function ShellPage() {
         case "gateways":
         case "gw": {
           if (gateways.length === 0) {
-            systemMsg("No gateways configured. Use 'guest' or 'add <key>' to add one.");
+            systemMsg("No gateways configured. Use '/guest' or '/add <key>' to add one.");
             break;
           }
           const lines = gateways.map((gw, idx) => {
@@ -155,7 +159,7 @@ export function ShellPage() {
             return `${active}${num} ${gw.name.padEnd(16)} ${status.padEnd(8)} ${gw.clawKey.slice(0, 8)}...${role}`;
           });
           systemMsg("Gateways (* = active):\n\n" + lines.join("\n") +
-            "\n\nSwitch: 'switch <name>' or 'switch <number>'");
+            "\n\nSwitch: '/switch <name>' or '/switch <number>'");
           break;
         }
 
@@ -179,7 +183,7 @@ export function ShellPage() {
                 (g) => g.name.toLowerCase() === arg.toLowerCase() || g.id === arg
               );
           if (!target) {
-            systemMsg(`Gateway "${arg}" not found. Type 'gateways' to list.`);
+            systemMsg(`Gateway "${arg}" not found. Type '/gateways' to list.`);
             break;
           }
           switchGateway(target.id);
@@ -220,7 +224,7 @@ export function ShellPage() {
 
         case "rename": {
           if (rawArgs.length < 2) {
-            systemMsg('Usage: rename <number|name> <new-name>\nExample: rename 1 Primary');
+            systemMsg('Usage: /rename <number|name> <new-name>\nExample: /rename 1 Primary');
             break;
           }
           let target = null;
@@ -242,7 +246,7 @@ export function ShellPage() {
             }
           }
           if (!target || !newName) {
-            systemMsg(`Gateway not found. Try: rename <number> <new-name>`);
+            systemMsg(`Gateway not found. Try: /rename <number> <new-name>`);
             break;
           }
           renameGateway(target.id, newName);
@@ -253,7 +257,7 @@ export function ShellPage() {
         case "remove": {
           const name = rawArgs.join(" ");
           if (!name) {
-            systemMsg('Usage: remove <name>');
+            systemMsg('Usage: /remove <name>');
             break;
           }
           const numMatch = /^\d+$/.test(name);
@@ -294,7 +298,7 @@ export function ShellPage() {
         case "connect": {
           const key = rawArgs[0] || clawKey;
           if (!key) {
-            systemMsg('No key provided. Use "connect ck_..." or "guest" to get one.');
+            systemMsg('No key provided. Use "/connect ck_..." or "/guest" to get one.');
             break;
           }
           if (!key.startsWith("ck_")) {
@@ -341,7 +345,7 @@ export function ShellPage() {
             systemMsg(clawKey);
             systemMsg(`Type: ${keyInfo?.type || "unknown"}`);
           } else {
-            systemMsg("No key set. Use 'guest' or 'connect <key>'.");
+            systemMsg("No key set. Use '/guest' or '/connect <key>'.");
           }
           break;
 
@@ -365,7 +369,7 @@ export function ShellPage() {
 
         case "share": {
           if (!clawKey) {
-            systemMsg("No key to share. Use 'guest' first.");
+            systemMsg("No key to share. Use '/guest' first.");
             break;
           }
           const shareUrl = `${window.location.origin}?claw_key=${encodeURIComponent(clawKey)}`;
@@ -382,7 +386,7 @@ export function ShellPage() {
         case "qr":
         case "qrcode": {
           if (!clawKey) {
-            systemMsg("No key to share. Use 'guest' first.");
+            systemMsg("No key to share. Use '/guest' first.");
             break;
           }
           const qrUrl = `${window.location.origin}?claw_key=${encodeURIComponent(clawKey)}`;
@@ -407,16 +411,18 @@ This installs the bridge, generates a key, and connects automatically.`);
           break;
 
         default:
-          if (connectionState === "connected") {
+          if (isSlashCmd) {
+            systemMsg(`Unknown command: /${cmd}. Type "/help" for available commands.`);
+          } else if (connectionState === "connected") {
             processingRef.current = true;
             setProcessing(true);
             await send(input);
             processingRef.current = false;
             setProcessing(false);
           } else {
-            systemMsg(`Unknown command: ${cmd}. Type "help" for available commands.`);
+            systemMsg(`Not connected. Type "/help" for available commands.`);
             if (!clawKey) {
-              systemMsg('Tip: paste a ClawKey directly, or type "guest" to get one.');
+              systemMsg('Tip: paste a ClawKey directly, or type "/guest" to get one.');
             }
           }
       }
@@ -505,13 +511,26 @@ This installs the bridge, generates a key, and connects automatically.`);
         <span>v{APP_VERSION}</span>
       </div>
 
-      {showQrUrl && <ShellQrOverlay url={showQrUrl} onClose={() => setShowQrUrl(null)} />}
+      {showQrUrl && <ShellQrOverlay url={showQrUrl} onClose={() => setShowQrUrl(null)} gatewayName={activeGateway?.name} clawKey={clawKey} connectionState={connectionState} />}
     </div>
   );
 }
 
-function ShellQrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
+function ShellQrOverlay({
+  url,
+  onClose,
+  gatewayName,
+  clawKey: key,
+  connectionState: connState,
+}: {
+  url: string;
+  onClose: () => void;
+  gatewayName?: string;
+  clawKey?: string | null;
+  connectionState?: string;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [copied, setCopied] = useState<"key" | "url" | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -521,6 +540,13 @@ function ShellQrOverlay({ url, onClose }: { url: string; onClose: () => void }) 
       color: { dark: "#000000", light: "#ffffff" },
     });
   }, [url]);
+
+  const copyText = (text: string, what: "key" | "url") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(what);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={onClose}>
@@ -537,6 +563,47 @@ function ShellQrOverlay({ url, onClose }: { url: string; onClose: () => void }) 
         <div className="flex justify-center p-4 bg-neutral-950 rounded-lg border border-neutral-800/50">
           <canvas ref={canvasRef} className="rounded" />
         </div>
+
+        {/* Gateway info */}
+        {key && (
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-neutral-600 font-terminal w-12 shrink-0">GATEWAY</span>
+              <span className="text-xs text-neutral-300 font-terminal truncate flex-1">{gatewayName || "—"}</span>
+              <span className={cn(
+                "text-[10px] font-terminal px-1.5 py-0.5 rounded",
+                connState === "connected" ? "text-term-400 bg-term-400/10" : "text-neutral-500 bg-neutral-800"
+              )}>
+                {connState === "connected" ? "online" : "offline"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-neutral-600 font-terminal w-12 shrink-0">KEY</span>
+              <code className="text-xs text-neutral-400 font-terminal truncate flex-1">
+                {key.slice(0, 8)}...{key.slice(-6)}
+              </code>
+              <button
+                onClick={() => copyText(key, "key")}
+                className="text-neutral-500 hover:text-neutral-300 transition-fast shrink-0"
+                title="Copy key"
+              >
+                {copied === "key" ? <CheckIcon size={13} className="text-term-400" /> : <Copy size={13} />}
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-neutral-600 font-terminal w-12 shrink-0">URL</span>
+              <code className="text-[10px] text-neutral-500 font-terminal truncate flex-1">{url.replace(/^https?:\/\//, "").slice(0, 32)}...</code>
+              <button
+                onClick={() => copyText(url, "url")}
+                className="text-neutral-500 hover:text-neutral-300 transition-fast shrink-0"
+                title="Copy URL"
+              >
+                {copied === "url" ? <CheckIcon size={13} className="text-term-400" /> : <Copy size={13} />}
+              </button>
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-neutral-500 text-center font-terminal">
           Scan from AnyClaw mobile app to add this gateway
         </p>
