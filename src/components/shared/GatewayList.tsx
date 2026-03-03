@@ -85,7 +85,7 @@ function GatewayQrOverlay({ clawKey, onClose }: { clawKey: string; onClose: () =
     QRCode.toCanvas(canvasRef.current, url, {
       width: 200,
       margin: 2,
-      color: { dark: "#22d3ee", light: "#0a0a0a" },
+      color: { dark: "#000000", light: "#ffffff" },
     });
   }, [url]);
 

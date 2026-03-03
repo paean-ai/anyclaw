@@ -518,7 +518,7 @@ function ShellQrOverlay({ url, onClose }: { url: string; onClose: () => void }) 
     QRCode.toCanvas(canvasRef.current, url, {
       width: 220,
       margin: 2,
-      color: { dark: "#22d3ee", light: "#0a0a0a" },
+      color: { dark: "#000000", light: "#ffffff" },
     });
   }, [url]);
 

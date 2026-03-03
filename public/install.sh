@@ -94,15 +94,11 @@ GATEWAY="${GATEWAY_URL:-${DETECTED_GW:-http://localhost:3007}}"
 GW_TYPE="${GATEWAY_TYPE:-${DETECTED_TYPE:-claw}}"
 info "Gateway: $GATEWAY ($GW_TYPE)"
 
-# ── Install anyclaw CLI ────────────────────────────────
-if command -v anyclaw >/dev/null 2>&1; then
-  ok "anyclaw CLI already installed"
-else
-  info "Installing anyclaw CLI..."
-  npm install -g anyclaw@latest 2>/dev/null || \
-    npm install -g anyclaw@latest
-  ok "anyclaw CLI installed"
-fi
+# ── Install / update anyclaw CLI ──────────────────────
+info "Installing anyclaw CLI (latest)..."
+npm install -g anyclaw@latest 2>/dev/null || \
+  npm install -g anyclaw@latest
+ok "anyclaw CLI ready ($(anyclaw --version 2>/dev/null || echo 'installed'))"
 
 # ── Generate guest ClawKey ──────────────────────────────
 info "Generating guest ClawKey..."
