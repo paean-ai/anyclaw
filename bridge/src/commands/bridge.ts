@@ -172,7 +172,7 @@ export async function runBridge(args: string[]): Promise<void> {
 
   console.log(`\n  ▄▀█ █▄░█ █▄█ █▀▀ █░░ ▄▀█ █░█░█`);
   console.log(`  █▀█ █░▀█ ░█░ █▄▄ █▄▄ █▀█ ▀▄▀▄▀`);
-  console.log(`\n  AnyClaw Bridge v0.2.3`);
+  console.log(`\n  AnyClaw Bridge v0.2.4`);
   if (config.name) console.log(`  Name:     ${config.name}`);
   console.log(`  Gateway:  ${config.gatewayUrl} (${config.gatewayType})`);
   console.log(`  Service:  ${config.serviceUrl}`);

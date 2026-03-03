@@ -169,7 +169,7 @@ async function main(): Promise<void> {
 
   console.log(`\n  ▄▀█ █▄░█ █▄█ █▀▀ █░░ ▄▀█ █░█░█`);
   console.log(`  █▀█ █░▀█ ░█░ █▄▄ █▄▄ █▀█ ▀▄▀▄▀`);
-  console.log(`\n  AnyClaw Bridge v0.2.3`);
+  console.log(`\n  AnyClaw Bridge v0.2.4`);
   console.log(`  Gateway:  ${config.gatewayUrl} (${config.gatewayType})`);
   console.log(`  Service:  ${config.serviceUrl}`);
   console.log(`  Key:      ${config.clawKey.slice(0, 8)}...`);
