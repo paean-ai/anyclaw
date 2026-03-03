@@ -39,6 +39,7 @@ interface AuthModalProps {
 export function AuthModal({ open, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState<"google" | "apple" | "paean" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const [appleSdkLoaded, setAppleSdkLoaded] = useState(false);
   const { handleGoogleLogin, handleAppleLogin } = useAuth();
 
@@ -174,6 +175,12 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
           </p>
         </div>
 
+        {hint && (
+          <div className="mb-4 p-3 rounded-lg bg-claw-500/10 border border-claw-500/20 text-xs text-claw-400">
+            {hint}
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-error-400/10 border border-error-400/20 text-xs text-error-400">
             {error}
@@ -257,15 +264,8 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
           {/* Paean Account — same as Google Sign-In (Paean accounts ARE Google/Apple OAuth) */}
           <button
             onClick={() => {
-              // Paean Account login triggers Google Sign-In as the primary flow
-              if (GOOGLE_CLIENT_ID) {
-                // Focus the Google button to trigger it
-                const googleBtn = document.querySelector('[data-onsuccess]') as HTMLElement;
-                if (googleBtn) googleBtn.click();
-                else setError("Please use Google or Apple above to sign in with your Paean account.");
-              } else {
-                setError("Sign-In is not configured. Please use Google or Apple to sign in.");
-              }
+              setError(null);
+              setHint("Please use Google or Apple above to sign in with your Paean account.");
             }}
             className={cn(
               "flex items-center justify-center gap-3",
