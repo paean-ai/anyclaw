@@ -17,9 +17,13 @@ import {
   getStoredToken,
   setStoredToken,
   removeStoredToken,
+  getStoredUser,
+  setStoredUser,
+  removeStoredUser,
   getTheme,
   setTheme as persistTheme,
 } from "@/lib/storage";
+import { decodeJwtUser } from "@/lib/api";
 import type {
   AppMode,
   ConnectionState,
@@ -92,7 +96,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return initial[0]?.id ?? null;
   });
   const [authToken, setAuthTokenState] = useState<string | null>(getStoredToken);
-  const [user, setUser] = useState<{ id: number; email: string; name: string } | null>(null);
+  const [user, setUserState] = useState<{ id: number; email: string; name: string } | null>(() => {
+    // Restore user from storage, or decode from JWT token
+    const stored = getStoredUser();
+    if (stored) return stored;
+    const token = getStoredToken();
+    if (token) {
+      try {
+        return decodeJwtUser(token);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
@@ -280,11 +297,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [activeGatewayId, updateGatewayStatus]
   );
 
+  const setUser = useCallback((u: { id: number; email: string; name: string } | null) => {
+    setUserState(u);
+    if (u) setStoredUser(u);
+    else removeStoredUser();
+  }, []);
+
   const setAuthToken = useCallback((token: string | null) => {
     setAuthTokenState(token);
     if (token) setStoredToken(token);
-    else removeStoredToken();
-  }, []);
+    else {
+      removeStoredToken();
+      setUser(null);
+    }
+  }, [setUser]);
 
   const addMessage = useCallback((msg: Message) => {
     setMessages((prev) => [...prev, msg]);

@@ -1,14 +1,16 @@
 import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useChannel } from "@/hooks/useChannel";
 import { useConnection } from "@/hooks/useConnection";
 import { useGatewayPoller } from "@/hooks/useGatewayPoller";
-import { createGuestKey, channelOnline, regenerateKey } from "@/lib/api";
+import { createGuestKey, createPersistentKey, channelOnline, regenerateKey } from "@/lib/api";
 import { TerminalBoot } from "./TerminalBoot";
 import { Terminal } from "./Terminal";
 import { ConnectionStatus } from "@/components/shared/ConnectionStatus";
 import { QrOverlay } from "@/components/shared/QrOverlay";
+import { AuthModal } from "@/components/shared/AuthModal";
 import { nanoid } from "nanoid";
 import { APP_VERSION } from "@/config/env";
 
@@ -16,7 +18,7 @@ const HELP_TEXT = `Available commands:
 
   /connect [key]       Connect using a ClawKey (or paste one directly)
   /disconnect          Disconnect from local agent
-  /guest               Generate a temporary guest key
+  /guest               Generate a key (persistent if signed in, otherwise guest)
   /refresh             Regenerate current key (persistent keys, requires auth)
   /share               Show share URL for cross-device access
   /qr                  Show QR code for mobile app to scan
@@ -28,6 +30,9 @@ const HELP_TEXT = `Available commands:
   /add [key] [--name]  Add a new gateway (with optional key and name)
   /rename <old> <new>  Rename a gateway
   /remove <name>       Remove a gateway
+  /login               Sign in to your account
+  /logout              Sign out of your account
+  /whoami              Show current user info
   /clear               Clear terminal
   /gui                 Switch to graphical UI mode
   /help                Show this help
@@ -64,19 +69,22 @@ export function ShellPage() {
     renameGateway,
     updateGatewayStatus,
   } = useApp();
+  const { user, isAuthenticated, logout } = useAuth();
   const { send } = useChannel();
   const { checkOnline } = useConnection();
   const [booted, setBooted] = useState(false);
   const [processing, setProcessing] = useState(false);
   const processingRef = useRef(false);
   const [showQrUrl, setShowQrUrl] = useState<string | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
   const welcomeSentRef = useRef(false);
 
   useGatewayPoller();
 
+  const userTag = isAuthenticated ? (user?.name || user?.email || "user") : "web";
   const prompt = connectionState === "connected"
-    ? `anyclaw@${activeGateway?.name?.toLowerCase().replace(/\s+/g, "-") || "local"}:~$ `
-    : "anyclaw@web:~$ ";
+    ? `${userTag}@${activeGateway?.name?.toLowerCase().replace(/\s+/g, "-") || "local"}:~$ `
+    : `${userTag}@anyclaw:~$ `;
 
   const systemMsg = useCallback(
     (text: string) => {
@@ -274,12 +282,23 @@ export function ShellPage() {
         }
 
         case "guest": {
-          systemMsg("Generating guest key...");
+          if (authToken) {
+            systemMsg("Generating persistent key (signed in)...");
+          } else {
+            systemMsg("Generating guest key...");
+          }
           try {
-            const info = await createGuestKey();
+            const info = authToken
+              ? await createPersistentKey(authToken, "AnyClaw Key")
+              : await createGuestKey();
             const gw = addGateway(info.key, info);
-            systemMsg(`Guest key created: ${info.key}`);
-            systemMsg("This key expires in 24 hours.");
+            if (info.type === "persistent") {
+              systemMsg(`Persistent key created: ${info.key}`);
+              systemMsg("This key does not expire.");
+            } else {
+              systemMsg(`Guest key created: ${info.key}`);
+              systemMsg("This key expires in 24 hours. Sign in for persistent keys.");
+            }
             const online = await channelOnline(info.key);
             updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
             if (!online) {
@@ -335,6 +354,7 @@ export function ShellPage() {
             }
             systemMsg(`Total gateways: ${gateways.length}`);
           }
+          systemMsg(`Account: ${isAuthenticated ? (user?.name || user?.email || "signed in") : "not signed in"}`);
           await checkOnline();
           break;
 
@@ -401,6 +421,40 @@ export function ShellPage() {
 This installs the bridge, generates a key, and connects automatically.`);
           break;
 
+        case "login":
+        case "signin": {
+          if (isAuthenticated) {
+            systemMsg(`Already signed in as ${user?.name || user?.email || "user"}.`);
+          } else {
+            setShowAuth(true);
+            systemMsg("Opening sign-in dialog...");
+          }
+          break;
+        }
+
+        case "logout":
+        case "signout": {
+          if (!isAuthenticated) {
+            systemMsg("Not signed in.");
+          } else {
+            const name = user?.name || user?.email || "user";
+            logout();
+            systemMsg(`Signed out. Goodbye, ${name}.`);
+          }
+          break;
+        }
+
+        case "whoami": {
+          if (isAuthenticated) {
+            systemMsg(`Signed in as ${user?.name || "User"}`);
+            if (user?.email) systemMsg(`Email: ${user.email}`);
+            systemMsg(`Key type: ${keyInfo?.type || "none"}`);
+          } else {
+            systemMsg("Not signed in. Use '/login' to sign in.");
+          }
+          break;
+        }
+
         case "gui":
         case "dev":
         case "ui":
@@ -434,6 +488,9 @@ This installs the bridge, generates a key, and connects automatically.`);
       setKeyInfo,
       keyInfo,
       authToken,
+      isAuthenticated,
+      user,
+      logout,
       setConnectionState,
       addMessage,
       clearMessages,
@@ -510,6 +567,7 @@ This installs the bridge, generates a key, and connects automatically.`);
       </div>
 
       {showQrUrl && <QrOverlay url={showQrUrl} onClose={() => setShowQrUrl(null)} gatewayName={activeGateway?.name} clawKey={clawKey} connectionState={connectionState} terminal />}
+      <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
     </div>
   );
 }

@@ -30,6 +30,26 @@ export function removeStoredToken(): void {
   localStorage.removeItem(`${STORAGE_PREFIX}auth_token`);
 }
 
+// ---- User ----
+
+export function getStoredUser(): { id: number; email: string; name: string } | null {
+  const raw = localStorage.getItem(`${STORAGE_PREFIX}user`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: { id: number; email: string; name: string }): void {
+  localStorage.setItem(`${STORAGE_PREFIX}user`, JSON.stringify(user));
+}
+
+export function removeStoredUser(): void {
+  localStorage.removeItem(`${STORAGE_PREFIX}user`);
+}
+
 // ---- Theme ----
 
 export function getTheme(): "dark" | "light" {

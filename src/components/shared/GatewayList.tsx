@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
-import { createGuestKey, channelOnline } from "@/lib/api";
+import { createGuestKey, createPersistentKey, channelOnline } from "@/lib/api";
 import { QrOverlay } from "@/components/shared/QrOverlay";
 import {
   Plus,
@@ -84,6 +84,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
     removeGateway,
     renameGateway,
     updateGatewayStatus,
+    authToken,
   } = useApp();
   const [showAdd, setShowAdd] = useState(false);
   const [inputKey, setInputKey] = useState("");
@@ -114,7 +115,9 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
     setLoading(true);
     setError(null);
     try {
-      const info = await createGuestKey();
+      const info = authToken
+        ? await createPersistentKey(authToken, inputName.trim() || "AnyClaw Key")
+        : await createGuestKey();
       const gw = addGateway(info.key, info, inputName.trim() || undefined);
       setInputName("");
       setShowAdd(false);
@@ -125,7 +128,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
     } finally {
       setLoading(false);
     }
-  }, [addGateway, updateGatewayStatus, inputName]);
+  }, [addGateway, updateGatewayStatus, inputName, authToken]);
 
   const handleRemove = useCallback(
     (e: React.MouseEvent, id: string) => {
@@ -342,7 +345,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
               )}
             >
               {loading ? <Loader2 size={12} className="animate-spin" /> : <Key size={12} />}
-              Guest
+              {authToken ? "Persistent" : "Guest"}
             </button>
             <button
               onClick={() => {
