@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { createGuestKey, regenerateKey } from "@/lib/api";
-import QRCode from "qrcode";
+import { QrOverlay } from "@/components/shared/QrOverlay";
 import {
   Key,
   Copy,
@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Share2,
   QrCode,
-  X,
   Shield,
   Clock,
 } from "lucide-react";
@@ -27,112 +26,6 @@ interface KeyManagerProps {
 function getShareUrl(key: string): string {
   const base = window.location.origin;
   return `${base}?claw_key=${encodeURIComponent(key)}`;
-}
-
-function QrOverlay({
-  url,
-  onClose,
-  gatewayName,
-  clawKey: qrKey,
-  connectionState,
-}: {
-  url: string;
-  onClose: () => void;
-  gatewayName?: string;
-  clawKey?: string | null;
-  connectionState?: string;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [copied, setCopied] = useState<"key" | "url" | null>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, url, {
-      width: 200,
-      margin: 2,
-      color: { dark: "#000000", light: "#ffffff" },
-    });
-  }, [url]);
-
-  const copyText = (text: string, what: "key" | "url") => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(what);
-      setTimeout(() => setCopied(null), 2000);
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
-      <div
-        className={cn(
-          "border rounded-xl p-6 space-y-3 max-w-xs",
-          "bg-neutral-900 border-neutral-700",
-          "light:bg-white light:border-neutral-200"
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-neutral-200 light:text-neutral-800">Scan to connect</span>
-          <button
-            onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <div className="flex justify-center p-4 bg-neutral-950 light:bg-neutral-100 rounded-lg">
-          <canvas ref={canvasRef} className="rounded" />
-        </div>
-
-        {qrKey && (
-          <div className="space-y-1.5 pt-1">
-            <div className="flex items-center gap-2">
-              <span className={cn("text-[10px] w-12 shrink-0", "text-neutral-600 light:text-neutral-400")}>GATEWAY</span>
-              <span className={cn("text-xs truncate flex-1", "text-neutral-300 light:text-neutral-700")}>{gatewayName || "—"}</span>
-              <span className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded",
-                connectionState === "connected"
-                  ? "text-term-400 bg-term-400/10"
-                  : "text-neutral-500 bg-neutral-800 light:bg-neutral-200"
-              )}>
-                {connectionState === "connected" ? "online" : "offline"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={cn("text-[10px] w-12 shrink-0", "text-neutral-600 light:text-neutral-400")}>KEY</span>
-              <code className={cn("text-xs truncate flex-1 font-mono", "text-neutral-400 light:text-neutral-600")}>
-                {qrKey.slice(0, 8)}...{qrKey.slice(-6)}
-              </code>
-              <button
-                onClick={() => copyText(qrKey, "key")}
-                className={cn("transition-fast shrink-0", "text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700")}
-                title="Copy key"
-              >
-                {copied === "key" ? <Check size={13} className="text-term-400" /> : <Copy size={13} />}
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={cn("text-[10px] w-12 shrink-0", "text-neutral-600 light:text-neutral-400")}>URL</span>
-              <code className={cn("text-[10px] truncate flex-1 font-mono", "text-neutral-500 light:text-neutral-400")}>
-                {url.replace(/^https?:\/\//, "").slice(0, 32)}...
-              </code>
-              <button
-                onClick={() => copyText(url, "url")}
-                className={cn("transition-fast shrink-0", "text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700")}
-                title="Copy URL"
-              >
-                {copied === "url" ? <Check size={13} className="text-term-400" /> : <Copy size={13} />}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <p className="text-xs text-neutral-500 text-center">
-          Open this QR from your phone to connect with the same ClawKey
-        </p>
-      </div>
-    </div>
-  );
 }
 
 export function KeyManager({ variant = "inline", onLogin }: KeyManagerProps) {

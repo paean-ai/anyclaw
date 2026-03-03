@@ -1,18 +1,16 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { useChannel } from "@/hooks/useChannel";
 import { useConnection } from "@/hooks/useConnection";
 import { useGatewayPoller } from "@/hooks/useGatewayPoller";
 import { createGuestKey, channelOnline, regenerateKey } from "@/lib/api";
-import { Copy, Check as CheckIcon } from "lucide-react";
 import { TerminalBoot } from "./TerminalBoot";
 import { Terminal } from "./Terminal";
 import { ConnectionStatus } from "@/components/shared/ConnectionStatus";
+import { QrOverlay } from "@/components/shared/QrOverlay";
 import { nanoid } from "nanoid";
 import { APP_VERSION } from "@/config/env";
-import QRCode from "qrcode";
-import { X } from "lucide-react";
 
 const HELP_TEXT = `Available commands:
 
@@ -180,8 +178,8 @@ export function ShellPage() {
           const target = numMatch
             ? gateways[parseInt(arg, 10) - 1]
             : gateways.find(
-                (g) => g.name.toLowerCase() === arg.toLowerCase() || g.id === arg
-              );
+              (g) => g.name.toLowerCase() === arg.toLowerCase() || g.id === arg
+            );
           if (!target) {
             systemMsg(`Gateway "${arg}" not found. Type '/gateways' to list.`);
             break;
@@ -264,8 +262,8 @@ export function ShellPage() {
           const target = numMatch
             ? gateways[parseInt(name, 10) - 1]
             : gateways.find(
-                (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
-              );
+              (g) => g.name.toLowerCase() === name.toLowerCase() || g.id === name
+            );
           if (!target) {
             systemMsg(`Gateway "${name}" not found.`);
             break;
@@ -511,103 +509,8 @@ This installs the bridge, generates a key, and connects automatically.`);
         <span>v{APP_VERSION}</span>
       </div>
 
-      {showQrUrl && <ShellQrOverlay url={showQrUrl} onClose={() => setShowQrUrl(null)} gatewayName={activeGateway?.name} clawKey={clawKey} connectionState={connectionState} />}
+      {showQrUrl && <QrOverlay url={showQrUrl} onClose={() => setShowQrUrl(null)} gatewayName={activeGateway?.name} clawKey={clawKey} connectionState={connectionState} terminal />}
     </div>
   );
 }
 
-function ShellQrOverlay({
-  url,
-  onClose,
-  gatewayName,
-  clawKey: key,
-  connectionState: connState,
-}: {
-  url: string;
-  onClose: () => void;
-  gatewayName?: string;
-  clawKey?: string | null;
-  connectionState?: string;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [copied, setCopied] = useState<"key" | "url" | null>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, url, {
-      width: 220,
-      margin: 2,
-      color: { dark: "#000000", light: "#ffffff" },
-    });
-  }, [url]);
-
-  const copyText = (text: string, what: "key" | "url") => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(what);
-      setTimeout(() => setCopied(null), 2000);
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={onClose}>
-      <div
-        className="border rounded-xl p-6 space-y-3 max-w-xs bg-neutral-900 border-neutral-700"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-claw-400 font-terminal">scan to connect</span>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-300">
-            <X size={16} />
-          </button>
-        </div>
-        <div className="flex justify-center p-4 bg-neutral-950 rounded-lg border border-neutral-800/50">
-          <canvas ref={canvasRef} className="rounded" />
-        </div>
-
-        {/* Gateway info */}
-        {key && (
-          <div className="space-y-1.5 pt-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-neutral-600 font-terminal w-12 shrink-0">GATEWAY</span>
-              <span className="text-xs text-neutral-300 font-terminal truncate flex-1">{gatewayName || "—"}</span>
-              <span className={cn(
-                "text-[10px] font-terminal px-1.5 py-0.5 rounded",
-                connState === "connected" ? "text-term-400 bg-term-400/10" : "text-neutral-500 bg-neutral-800"
-              )}>
-                {connState === "connected" ? "online" : "offline"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-neutral-600 font-terminal w-12 shrink-0">KEY</span>
-              <code className="text-xs text-neutral-400 font-terminal truncate flex-1">
-                {key.slice(0, 8)}...{key.slice(-6)}
-              </code>
-              <button
-                onClick={() => copyText(key, "key")}
-                className="text-neutral-500 hover:text-neutral-300 transition-fast shrink-0"
-                title="Copy key"
-              >
-                {copied === "key" ? <CheckIcon size={13} className="text-term-400" /> : <Copy size={13} />}
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-neutral-600 font-terminal w-12 shrink-0">URL</span>
-              <code className="text-[10px] text-neutral-500 font-terminal truncate flex-1">{url.replace(/^https?:\/\//, "").slice(0, 32)}...</code>
-              <button
-                onClick={() => copyText(url, "url")}
-                className="text-neutral-500 hover:text-neutral-300 transition-fast shrink-0"
-                title="Copy URL"
-              >
-                {copied === "url" ? <CheckIcon size={13} className="text-term-400" /> : <Copy size={13} />}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <p className="text-xs text-neutral-500 text-center font-terminal">
-          Scan from AnyClaw mobile app to add this gateway
-        </p>
-      </div>
-    </div>
-  );
-}

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { createGuestKey, channelOnline } from "@/lib/api";
-import QRCode from "qrcode";
+import { QrOverlay } from "@/components/shared/QrOverlay";
 import {
   Plus,
   Trash2,
@@ -14,9 +14,8 @@ import {
   ChevronRight,
   Pencil,
   QrCode,
-  X,
 } from "lucide-react";
-import type { ConnectionState } from "@/types";
+import type { ConnectionState, GatewayProfile } from "@/types";
 
 const STATUS_COLORS: Record<ConnectionState, string> = {
   connected: "bg-term-400",
@@ -76,49 +75,6 @@ function InlineRenameInput({
   );
 }
 
-function GatewayQrOverlay({ clawKey, onClose }: { clawKey: string; onClose: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const url = `${window.location.origin}?claw_key=${encodeURIComponent(clawKey)}`;
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, url, {
-      width: 200,
-      margin: 2,
-      color: { dark: "#000000", light: "#ffffff" },
-    });
-  }, [url]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
-      <div
-        className={cn(
-          "border rounded-xl p-6 space-y-3 max-w-xs",
-          "bg-neutral-900 border-neutral-700",
-          "light:bg-white light:border-neutral-200"
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-neutral-200 light:text-neutral-800">Scan to connect</span>
-          <button
-            onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-300 light:hover:text-neutral-700"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <div className="flex justify-center p-4 bg-neutral-950 rounded-lg light:bg-neutral-100">
-          <canvas ref={canvasRef} className="rounded" />
-        </div>
-        <p className="text-xs text-neutral-500 text-center">
-          Scan this QR code from your phone to add this gateway
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function GatewayList({ compact, onLogin }: GatewayListProps) {
   const {
     gateways,
@@ -135,7 +91,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [qrKey, setQrKey] = useState<string | null>(null);
+  const [qrGateway, setQrGateway] = useState<GatewayProfile | null>(null);
 
   const handleAddWithKey = useCallback(() => {
     const trimmed = inputKey.trim();
@@ -261,7 +217,7 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setQrKey(gw.clawKey);
+                      setQrGateway(gw);
                     }}
                     className={cn(
                       "opacity-0 group-hover:opacity-100 p-0.5 rounded",
@@ -304,7 +260,15 @@ export function GatewayList({ compact, onLogin }: GatewayListProps) {
         );
       })}
 
-      {qrKey && <GatewayQrOverlay clawKey={qrKey} onClose={() => setQrKey(null)} />}
+      {qrGateway && (
+        <QrOverlay
+          url={`${window.location.origin}?claw_key=${encodeURIComponent(qrGateway.clawKey)}`}
+          onClose={() => setQrGateway(null)}
+          gatewayName={qrGateway.name}
+          clawKey={qrGateway.clawKey}
+          connectionState={qrGateway.connectionState}
+        />
+      )}
 
       {gateways.length === 0 && !showAdd && (
         <div className="text-xs text-neutral-500 px-3 py-4 text-center">
