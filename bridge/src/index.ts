@@ -32,7 +32,7 @@ function parseArgs(): BridgeConfig {
     gatewayUrl: "http://localhost:3007",
     gatewayType: "claw",
     clawKey: "",
-    serviceUrl: "http://localhost:4777",
+    serviceUrl: "https://api.paean.ai",
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -62,7 +62,7 @@ function parseArgs(): BridgeConfig {
 
   config.clawKey = config.clawKey || process.env.CLAW_KEY || "";
   config.serviceUrl =
-    config.serviceUrl || process.env.ANYCLAW_SERVICE_URL || "http://localhost:4777";
+    config.serviceUrl || process.env.ANYCLAW_SERVICE_URL || "https://api.paean.ai";
   config.gatewayUrl =
     config.gatewayUrl || process.env.GATEWAY_URL || "http://localhost:3007";
 
@@ -80,7 +80,7 @@ function printHelp(): void {
     -g, --gateway <url>     Local agent gateway URL (default: http://localhost:3007)
     -t, --type <type>       Gateway type: claw, 0claw, paeanclaw, zeroclaw, openai (default: claw)
     -k, --key <key>         ClawKey for relay authentication
-    -s, --service <url>     AnyClaw service URL (default: http://localhost:4777)
+    -s, --service <url>     AnyClaw service URL (default: https://api.paean.ai)
     -h, --help              Show this help
 
   Environment:
