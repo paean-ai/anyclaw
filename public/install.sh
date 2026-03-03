@@ -102,9 +102,20 @@ ok "anyclaw CLI ready ($(anyclaw --version 2>/dev/null || echo 'installed'))"
 
 # ── Generate guest ClawKey ──────────────────────────────
 info "Generating guest ClawKey..."
-KEY_RESPONSE=$(curl -sf -X POST "$SERVICE_URL/claw/key/guest" \
-  -H "Content-Type: application/json" 2>&1) || \
+HTTP_CODE=$(curl -s -o /tmp/anyclaw_key_resp.json -w '%{http_code}' \
+  -X POST "$SERVICE_URL/claw/key/guest" \
+  -H "Content-Type: application/json" 2>/dev/null) || \
   fail "Could not reach AnyClaw service at $SERVICE_URL. Is the server running?"
+
+KEY_RESPONSE=$(cat /tmp/anyclaw_key_resp.json 2>/dev/null)
+rm -f /tmp/anyclaw_key_resp.json
+
+if [ "$HTTP_CODE" = "000" ]; then
+  fail "Could not reach AnyClaw service at $SERVICE_URL. Is the server running?"
+elif [ "$HTTP_CODE" != "200" ]; then
+  API_ERR=$(echo "$KEY_RESPONSE" | grep -o '"error":"[^"]*"' | head -1 | cut -d'"' -f4)
+  fail "Guest key creation failed (HTTP $HTTP_CODE): ${API_ERR:-$KEY_RESPONSE}"
+fi
 
 CLAW_KEY=$(echo "$KEY_RESPONSE" | grep -o '"key":"[^"]*"' | head -1 | cut -d'"' -f4)
 [ -z "$CLAW_KEY" ] && fail "Failed to parse ClawKey from service response"
