@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { cn } from "@/lib/cn";
 import { useApp } from "@/contexts/AppContext";
 import { useChannel } from "@/hooks/useChannel";
@@ -10,6 +10,8 @@ import { Terminal } from "./Terminal";
 import { ConnectionStatus } from "@/components/shared/ConnectionStatus";
 import { nanoid } from "nanoid";
 import { APP_VERSION } from "@/config/env";
+import QRCode from "qrcode";
+import { X } from "lucide-react";
 
 const HELP_TEXT = `Available commands:
 
@@ -18,6 +20,7 @@ const HELP_TEXT = `Available commands:
   guest               Generate a temporary guest key
   refresh             Regenerate current key (persistent keys, requires auth)
   share               Show share URL for cross-device access
+  qr                  Show QR code for mobile app to scan
   install             Show one-line install command
   status              Show connection status
   key                 Show current ClawKey
@@ -67,6 +70,7 @@ export function ShellPage() {
   const [booted, setBooted] = useState(false);
   const [processing, setProcessing] = useState(false);
   const processingRef = useRef(false);
+  const [showQrUrl, setShowQrUrl] = useState<string | null>(null);
   const welcomeSentRef = useRef(false);
 
   useGatewayPoller();
@@ -375,6 +379,18 @@ export function ShellPage() {
           break;
         }
 
+        case "qr":
+        case "qrcode": {
+          if (!clawKey) {
+            systemMsg("No key to share. Use 'guest' first.");
+            break;
+          }
+          const qrUrl = `${window.location.origin}?claw_key=${encodeURIComponent(clawKey)}`;
+          setShowQrUrl(qrUrl);
+          systemMsg("QR code displayed. Scan from AnyClaw mobile app to add this gateway.");
+          break;
+        }
+
         case "install":
           systemMsg(`One-line install:
 
@@ -487,6 +503,43 @@ This installs the bridge, generates a key, and connects automatically.`);
       >
         <span>HTTPS · E2EE Ready</span>
         <span>v{APP_VERSION}</span>
+      </div>
+
+      {showQrUrl && <ShellQrOverlay url={showQrUrl} onClose={() => setShowQrUrl(null)} />}
+    </div>
+  );
+}
+
+function ShellQrOverlay({ url, onClose }: { url: string; onClose: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    QRCode.toCanvas(canvasRef.current, url, {
+      width: 220,
+      margin: 2,
+      color: { dark: "#22d3ee", light: "#0a0a0a" },
+    });
+  }, [url]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={onClose}>
+      <div
+        className="border rounded-xl p-6 space-y-3 max-w-xs bg-neutral-900 border-neutral-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-claw-400 font-terminal">scan to connect</span>
+          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-300">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex justify-center p-4 bg-neutral-950 rounded-lg border border-neutral-800/50">
+          <canvas ref={canvasRef} className="rounded" />
+        </div>
+        <p className="text-xs text-neutral-500 text-center font-terminal">
+          Scan from AnyClaw mobile app to add this gateway
+        </p>
       </div>
     </div>
   );

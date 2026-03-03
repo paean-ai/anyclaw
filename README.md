@@ -139,8 +139,8 @@ AnyClaw works with any local AI agent that speaks one of two protocols:
 | Agent | Language | Install | Default Port | Description |
 |-------|----------|---------|--------------|-------------|
 | **[0claw](https://github.com/paean-ai/0claw)** | Rust | `curl -fsSL https://0.works/install.sh \| bash` | 3007 | The absolute core. ~500 lines, single binary, MCP tools, SQLite. |
-| **[PaeanClaw](https://github.com/anthropics/paeanclaw)** | TypeScript | `npm install -g paeanclaw` | 3007 | Ultra-minimal (~365 lines). MCP tools, web PWA, Telegram. |
-| **[ZeroClaw](https://github.com/anthropics/zeroclaw)** | Rust | `cargo install zeroclaw` | 42617 | Full agent platform. 50+ tools, 20+ channels, hardware support. |
+| **[PaeanClaw](https://github.com/paean-ai/paeanclaw)** | TypeScript | `npm install -g paeanclaw` | 3007 | Ultra-minimal (~365 lines). MCP tools, web PWA, Telegram. |
+| **[ZeroClaw](https://github.com/paean-ai/zeroclaw)** | Rust | `cargo install zeroclaw` | 42617 | Full agent platform. 50+ tools, 20+ channels, hardware support. |
 | **OpenClaw** | Python | `pip install openclaw` | 3007 | Feature-rich. 60+ tools, voice mode, 16+ platforms. |
 | **NanoClaw** | Docker | `docker pull nanoclaw/nanoclaw` | 3007 | Container-isolated. Docker/Apple Container sandboxing. |
 
@@ -226,20 +226,17 @@ npm run dev     # build + run
 
 ### Local Testing
 
-For full end-to-end testing without the production relay:
+For full end-to-end testing:
 
 ```bash
-# Terminal 1: Start the local test relay
-cd ../anyclaw-service && npm run dev
-
-# Terminal 2: Start your local agent
+# Terminal 1: Start your local agent
 paeanclaw
 
-# Terminal 3: Start the web frontend
-cd anyclaw && npm run dev
+# Terminal 2: Start the web frontend
+npm run dev
 
-# Terminal 4: Run the bridge
-cd anyclaw/bridge && node dist/index.js -k <your-key>
+# Terminal 3: Run the bridge (connects to https://api.paean.ai by default)
+cd bridge && node dist/index.js -k <your-key>
 ```
 
 Or simply:

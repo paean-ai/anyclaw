@@ -99,6 +99,8 @@ const MIN_POLL_MS = 500;
 const MAX_POLL_MS = 5000;
 const BACKOFF_FACTOR = 1.5;
 
+let activeConversationId: string | undefined;
+
 async function processRequest(
   relay: RelayConfig,
   gatewayUrl: string,
@@ -126,7 +128,7 @@ async function processRequest(
   };
 
   try {
-    const fullContent = await adapter.send(
+    const result = await adapter.send(
       gatewayUrl,
       message,
       (event) => {
@@ -138,10 +140,13 @@ async function processRequest(
         ) {
           flush();
         }
-      }
+      },
+      undefined,
+      activeConversationId
     );
+    if (result.conversationId) activeConversationId = result.conversationId;
     await flush();
-    await completeRequest(relay, requestId, { content: fullContent });
+    await completeRequest(relay, requestId, { content: result.content });
     console.log(`  [done] ${requestId}`);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
@@ -164,7 +169,7 @@ async function main(): Promise<void> {
 
   console.log(`\n  ▄▀█ █▄░█ █▄█ █▀▀ █░░ ▄▀█ █░█░█`);
   console.log(`  █▀█ █░▀█ ░█░ █▄▄ █▄▄ █▀█ ▀▄▀▄▀`);
-  console.log(`\n  AnyClaw Bridge v0.1.0`);
+  console.log(`\n  AnyClaw Bridge v0.2.3`);
   console.log(`  Gateway:  ${config.gatewayUrl} (${config.gatewayType})`);
   console.log(`  Service:  ${config.serviceUrl}`);
   console.log(`  Key:      ${config.clawKey.slice(0, 8)}...`);

@@ -11,14 +11,20 @@ export interface ChannelEvent {
   data: Record<string, unknown>;
 }
 
+export interface SendResult {
+  content: string;
+  conversationId?: string;
+}
+
 export interface GatewayAdapter {
   name: string;
   send(
     gatewayUrl: string,
     message: string,
     onEvent: (event: ChannelEvent) => void,
-    signal?: AbortSignal
-  ): Promise<string>;
+    signal?: AbortSignal,
+    conversationId?: string
+  ): Promise<SendResult>;
 }
 
 async function readSSEStream(
@@ -47,12 +53,15 @@ async function readSSEStream(
 export const clawAdapter: GatewayAdapter = {
   name: "claw",
 
-  async send(gatewayUrl, message, onEvent, signal) {
+  async send(gatewayUrl, message, onEvent, signal, conversationId) {
     const url = `${gatewayUrl.replace(/\/$/, "")}/api/chat`;
+    const body: Record<string, string> = { message };
+    if (conversationId) body.conversationId = conversationId;
+
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
       signal,
     });
     if (!res.ok || !res.body) {
@@ -60,12 +69,16 @@ export const clawAdapter: GatewayAdapter = {
     }
 
     let fullContent = "";
+    let returnedConversationId: string | undefined;
 
     await readSSEStream(res.body, (line) => {
       if (!line.startsWith("data: ")) return;
       try {
         const event = JSON.parse(line.slice(6));
         switch (event.type) {
+          case "start":
+            if (event.conversationId) returnedConversationId = event.conversationId;
+            break;
           case "content":
             fullContent += event.text || "";
             onEvent({ type: "content", data: { text: event.text, partial: true } });
@@ -88,7 +101,7 @@ export const clawAdapter: GatewayAdapter = {
       }
     });
 
-    return fullContent;
+    return { content: fullContent, conversationId: returnedConversationId };
   },
 };
 
@@ -99,7 +112,7 @@ export const clawAdapter: GatewayAdapter = {
 export const openaiAdapter: GatewayAdapter = {
   name: "openai",
 
-  async send(gatewayUrl, message, onEvent, signal) {
+  async send(gatewayUrl, message, onEvent, signal, _conversationId) {
     const url = `${gatewayUrl.replace(/\/$/, "")}/v1/chat/completions`;
     const res = await fetch(url, {
       method: "POST",
@@ -132,7 +145,7 @@ export const openaiAdapter: GatewayAdapter = {
       }
     });
 
-    return fullContent;
+    return { content: fullContent };
   },
 };
 

@@ -1,6 +1,6 @@
 {
   "name": "anyclaw",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "AnyClaw CLI — bridge, install, and manage local AI agent gateways",
   "type": "module",
   "bin": {
