@@ -297,14 +297,24 @@ export function ShellPage() {
               systemMsg("This key does not expire.");
             } else {
               systemMsg(`Guest key created: ${info.key}`);
-              systemMsg("This key expires in 24 hours. Sign in for persistent keys.");
+              systemMsg("This key expires in 24 hours. Sign in (/login) for persistent keys.");
             }
             const online = await channelOnline(info.key);
             updateGatewayStatus(gw.id, online ? "connected" : "disconnected");
             if (!online) {
-              systemMsg("Local agent is offline. Run your agent and bridge to connect.");
+              systemMsg(`Next steps:
+
+  1. Start your local AI agent (paeanclaw, zeroclaw, or OpenAI-compatible server)
+  2. Run the bridge to connect:
+
+     anyclaw bridge -g http://localhost:3007 -k ${info.key}
+
+  3. Come back here and start chatting!
+
+  Tip: Use "/qr" to show a QR code, "/share" to get a share URL.`);
             } else {
-              systemMsg("Connected to local agent. You can now chat.");
+              systemMsg("Connected to local agent. You can now chat!");
+              systemMsg(`Tip: Use "/share" to share this key, "/qr" for QR code, "/key" to view your key.`);
             }
           } catch (err) {
             systemMsg(`Error: ${err instanceof Error ? err.message : "Failed"}`);
@@ -360,8 +370,15 @@ export function ShellPage() {
 
         case "key":
           if (clawKey) {
-            systemMsg(clawKey);
-            systemMsg(`Type: ${keyInfo?.type || "unknown"}`);
+            systemMsg(`ClawKey: ${clawKey}
+Type: ${keyInfo?.type || "unknown"}
+Gateway: ${activeGateway?.name || "none"}
+Status: ${connectionState}
+
+Bridge command:
+  anyclaw bridge -g http://localhost:3007 -k ${clawKey}
+
+Use "/share" to get a share URL, "/qr" for QR code.`);
           } else {
             systemMsg("No key set. Use '/guest' or '/connect <key>'.");
           }
@@ -414,11 +431,17 @@ export function ShellPage() {
         }
 
         case "install":
-          systemMsg(`One-line install:
+          systemMsg(`One-line install (auto-detects your local agent):
 
   curl -sL anyclaw.sh | bash
 
-This installs the bridge, generates a key, and connects automatically.`);
+This will:
+  • Install the anyclaw CLI via npm
+  • Generate a guest ClawKey
+  • Auto-detect running agents (paeanclaw, zeroclaw, etc.)
+  • Start the bridge and open the web UI
+
+Requires: Node.js, npm, curl`);
           break;
 
         case "login":
